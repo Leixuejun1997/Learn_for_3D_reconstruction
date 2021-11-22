@@ -6,5 +6,5 @@ CXX_FLAGS =  -Wall -g
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/lei/git/task2/include 
+CXX_INCLUDES = -I/home/lei/git_for_homework/task2/include 
 

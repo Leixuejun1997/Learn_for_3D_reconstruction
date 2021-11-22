@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/lei/git/task2/task2-1_test_triangle.cpp" "/home/lei/git/task2/build/CMakeFiles/task2-1.dir/task2-1_test_triangle.cpp.o"
+  "/home/lei/git_for_homework/task2/task2-1_test_triangle.cpp" "/home/lei/git_for_homework/task2/build/CMakeFiles/task2-1.dir/task2-1_test_triangle.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
