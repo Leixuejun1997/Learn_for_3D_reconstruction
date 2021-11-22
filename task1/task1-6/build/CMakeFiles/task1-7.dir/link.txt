@@ -1,0 +1,1 @@
+/usr/bin/g++   -Wall -g  -rdynamic CMakeFiles/task1-7.dir/task1-7_test_features.cpp.o CMakeFiles/task1-7.dir/visualizer.cc.o  -o task1-7  include/sfm/libsfm.a include/util/libutil.a include/core/libcore.a include/features/libfeatures.a include/core/libcore.a include/util/libutil.a -lpng -lz -ljpeg -ltiff 

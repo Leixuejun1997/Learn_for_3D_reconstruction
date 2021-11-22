@@ -1,0 +1,1 @@
+/usr/bin/g++   -Wall -g  -rdynamic CMakeFiles/task1-6.dir/task1-6_test_matching.cpp.o CMakeFiles/task1-6.dir/visualizer.cc.o  -o task1-6  include/sfm/libsfm.a include/util/libutil.a include/core/libcore.a include/features/libfeatures.a include/core/libcore.a include/util/libutil.a -lpng -lz -ljpeg -ltiff 

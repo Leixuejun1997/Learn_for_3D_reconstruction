@@ -1,0 +1,3 @@
+/home/lei/git/task2/build/CMakeFiles/rebuild_cache.dir
+/home/lei/git/task2/build/CMakeFiles/edit_cache.dir
+/home/lei/git/task2/build/CMakeFiles/task2-1.dir
