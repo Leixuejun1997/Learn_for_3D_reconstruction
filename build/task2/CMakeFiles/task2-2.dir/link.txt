@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wall -g  -rdynamic CMakeFiles/task2-2.dir/task2-2_test_p3p_kneip.cpp.o  -o task2-2  ../include/sfm/libsfm.a ../include/util/libutil.a ../include/core/libcore.a ../include/features/libfeatures.a ../include/core/libcore.a ../include/util/libutil.a -lpng -lz -ljpeg -ltiff 

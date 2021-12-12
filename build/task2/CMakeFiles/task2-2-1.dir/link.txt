@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wall -g  -rdynamic CMakeFiles/task2-2-1.dir/task2-2_test_p3p_ransac.cpp.o  -o task2-2-1  ../include/sfm/libsfm.a ../include/util/libutil.a ../include/core/libcore.a ../include/features/libfeatures.a ../include/core/libcore.a ../include/util/libutil.a -lpng -lz -ljpeg -ltiff 

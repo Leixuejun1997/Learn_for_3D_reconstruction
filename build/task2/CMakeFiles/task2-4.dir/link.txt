@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wall -g  -rdynamic CMakeFiles/task2-4.dir/task2-4_test_jacobian.cpp.o  -o task2-4  ../include/sfm/libsfm.a ../include/util/libutil.a ../include/core/libcore.a ../include/features/libfeatures.a ../include/core/libcore.a ../include/util/libutil.a -lpng -lz -ljpeg -ltiff 

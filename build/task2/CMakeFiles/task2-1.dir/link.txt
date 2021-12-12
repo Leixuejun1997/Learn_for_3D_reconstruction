@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wall -g  -rdynamic CMakeFiles/task2-1.dir/task2-1_test_triangle.cpp.o  -o task2-1 

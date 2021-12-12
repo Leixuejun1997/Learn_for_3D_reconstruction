@@ -1,3 +1,0 @@
-/home/lei/git_for_homework/task2/build/CMakeFiles/rebuild_cache.dir
-/home/lei/git_for_homework/task2/build/CMakeFiles/edit_cache.dir
-/home/lei/git_for_homework/task2/build/CMakeFiles/task2-1.dir

@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -g  -rdynamic CMakeFiles/task3-1.dir/task3-1_test_incremental_sfm.cpp.o CMakeFiles/task3-1.dir/functions.cc.o  -o task3-1  ../include/sfm/libsfm.a ../include/util/libutil.a ../include/core/libcore.a ../include/features/libfeatures.a ../include/core/libcore.a ../include/util/libutil.a -lpng -lz -ljpeg -ltiff 
