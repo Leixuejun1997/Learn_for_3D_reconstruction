@@ -91,8 +91,8 @@ protected:
     Scene (void);
 
 private:
-    std::string basedir;
-    ViewList views;
+    std::string basedir;//文件夹
+    ViewList views;//图像连接图
     Bundle::Ptr bundle;
     bool bundle_dirty;
 

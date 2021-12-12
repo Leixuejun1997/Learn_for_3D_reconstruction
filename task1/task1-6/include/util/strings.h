@@ -459,8 +459,8 @@ lowercase (std::string const& str)
 {
     std::string ret(str);
     for (std::size_t i = 0; i < str.size(); ++i)
-        if (ret[i] >= 0x41 && ret[i] <= 0x5a)
-            ret[i] += 0x20;
+        if (ret[i] >= 0x41 && ret[i] <= 0x5a)//若字母在A-Z之间
+            ret[i] += 0x20;//改大写为小写
     return ret;
 }
 

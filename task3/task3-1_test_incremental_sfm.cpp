@@ -32,7 +32,7 @@ make_scene(const std::string &image_folder_path, const std::string &scene_path) 
     util::WallTimer timer; //计时器
 
     /*** 创建文件夹 ***/
-    const std::string views_path = util::fs::join_path(scene_path, "views/");
+    const std::string views_path = util::fs::join_path(scene_path, "views/"); //输出文件夹
     util::fs::mkdir(scene_path.c_str());
     util::fs::mkdir(views_path.c_str());
 
@@ -40,7 +40,7 @@ make_scene(const std::string &image_folder_path, const std::string &scene_path) 
     util::fs::Directory dir;
     try
     {
-        dir.scan(image_folder_path);
+        dir.scan(image_folder_path); //扫描输入路径的文件夹文件
     }
     catch (std::exception &e)
     {
@@ -52,7 +52,7 @@ make_scene(const std::string &image_folder_path, const std::string &scene_path) 
     core::Scene::Ptr scene = core::Scene::create("");
 
     /**** 开始加载图像 ****/
-    std::sort(dir.begin(), dir.end());
+    std::sort(dir.begin(), dir.end()); //从小到大排序
     int num_imported = 0;
     for (std::size_t i = 0; i < dir.size(); i++)
     {
@@ -63,30 +63,30 @@ make_scene(const std::string &image_folder_path, const std::string &scene_path) 
             continue;
         }
 
-        std::string fname = dir[i].name;
-        std::string afname = dir[i].get_absolute_name();
+        std::string fname = dir[i].name;                 //获得每一个文件的名字
+        std::string afname = dir[i].get_absolute_name(); //获得文件的绝对名字
 
         // 从可交换信息文件中读取图像焦距
         std::string exif;
-        core::ImageBase::Ptr image = load_any_image(afname, &exif);
+        core::ImageBase::Ptr image = load_any_image(afname, &exif); //获得图片的信息（图像长宽、焦距）
         if (image == nullptr)
         {
             continue;
         }
 
         core::View::Ptr view = core::View::create();
-        view->set_id(num_imported);
-        view->set_name(remove_file_extension(fname));
+        view->set_id(num_imported);                   //设置ID编号
+        view->set_name(remove_file_extension(fname)); //将去除扩展名的文件名赋予给view
 
         // 限制图像尺寸
-        int orig_width = image->width();
-        image = limit_image_size(image, MAX_PIXELS);
-        if (orig_width == image->width() && has_jpeg_extension(fname))
-            view->set_image_ref(afname, "original");
+        int orig_width = image->width();                               //图像宽度
+        image = limit_image_size(image, MAX_PIXELS);                   //设置图像的大小
+        if (orig_width == image->width() && has_jpeg_extension(fname)) //若文件宽度符合且有扩展名
+            view->set_image_ref(afname, "original");                   //把图片的名字改为original
         else
-            view->set_image(image, "original");
+            view->set_image(image, "original"); //重命名且将图片额尺寸重新定义
 
-        add_exif_to_view(view, exif);
+        add_exif_to_view(view, exif); //文件夹的exif.bolb文件
 
         scene->get_views().push_back(view);
 
@@ -113,19 +113,22 @@ make_scene(const std::string &image_folder_path, const std::string &scene_path) 
  */
 void features_and_matching(core::Scene::Ptr scene,
                            sfm::bundler::ViewportList *viewports,
-                           sfm::bundler::PairwiseMatching *pairwise_matching)
+                           sfm::bundler::PairwiseMatching *pairwise_matching) // ViewportList存放所有视角的信息
+//包括：焦距、径向畸变参数、相机姿态、特征点信息、以及特征点所在的tracks
+//PairwiseMatching：记录所有匹配的图像对的特征点对应关系
 {
 
     /* Feature computation for the scene. */
+    //定义计算特征的一些参数
     sfm::bundler::Features::Options feature_opts;
-    feature_opts.image_embedding = "original";
-    feature_opts.max_image_size = MAX_PIXELS;
-    feature_opts.feature_options.feature_types = sfm::FeatureSet::FEATURE_SIFT;
+    feature_opts.image_embedding = "original";//要计算特征的图像名
+    feature_opts.max_image_size = MAX_PIXELS;//最大图像大小（以像素为单位）6000000
+    feature_opts.feature_options.feature_types = sfm::FeatureSet::FEATURE_SIFT;//定义描述子的类型
 
     std::cout << "Computing image features..." << std::endl;
     {
-        util::WallTimer timer;
-        sfm::bundler::Features bundler_features(feature_opts);
+        util::WallTimer timer;//计时器
+        sfm::bundler::Features bundler_features(feature_opts);//把参数赋值给bundler_features
         bundler_features.compute(scene, viewports);
 
         std::cout << "Computing features took " << timer.get_elapsed()
@@ -169,7 +172,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    core::Scene::Ptr scene = make_scene(argv[1], argv[2]);//输入源文件夹路径与输出文件夹
+    core::Scene::Ptr scene = make_scene(argv[1], argv[2]); //输入源文件夹路径与输出文件夹
     std::cout << "Scene has " << scene->get_views().size() << " views. " << std::endl;
 
     /*进行特征匹配*/
@@ -198,7 +201,8 @@ int main(int argc, char *argv[])
     }
 
     /****** 开始增量的BA*****/
-    util::WallTimer timer;
+    //图像连接图构建
+    util::WallTimer timer; //时间计时器
     /* Compute connected feature components, i.e. feature tracks. */
     sfm::bundler::TrackList tracks;
     {

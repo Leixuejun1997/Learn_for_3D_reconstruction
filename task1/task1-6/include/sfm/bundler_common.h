@@ -30,6 +30,7 @@ SFM_BUNDLER_NAMESPACE_BEGIN
 
 /**
  * Per-viewport information.
+ * 视窗信息
  * Not all data is required for every step. It should be populated on demand
  * and cleaned as early as possible to keep memory consumption in bounds.
  */
@@ -37,22 +38,22 @@ struct Viewport
 {
     Viewport (void);
 
-    /** Initial focal length estimate for the image. */
+    /** Initial focal length estimate for the image. 图像的初始焦距估计*/
     float focal_length;
 
-    /** Radial distortion parameter. */
+    /** Radial distortion parameter. 径向畸变参数*/
     float radial_distortion[2];
 
-    /** Camera pose for the viewport. */
+    /** Camera pose for the viewport. 相机姿态*/
     CameraPose pose;
 
     /** The actual image data for debugging purposes. Usually nullptr! */
     core::ByteImage::Ptr image;
 
-    /** Per-feature information. */
+    /** Per-feature information. 特征点信息*/
     FeatureSet features;
 
-    /** Per-feature track ID, -1 if not part of a track. */
+    /** Per-feature track ID, -1 if not part of a track.每个特征点的track ID，如果不是这个track的特征点就记为-1 */
     std::vector<int> track_ids;
 };
 
@@ -112,14 +113,14 @@ typedef std::vector<SurveyPoint> SurveyPointList;
 
 /* ------------- Data Structures for Feature Matching ------------- */
 
-/** The matching result between two views. */
+/** The matching result between two views. 两个视角的匹配结果*/
 struct TwoViewMatching
 {
     bool operator< (TwoViewMatching const& rhs) const;
 
-    int view_1_id;
+    int view_1_id;//视角ID
     int view_2_id;
-    CorrespondenceIndices matches; // std::vector<pair<int, int> >
+    CorrespondenceIndices matches; // std::vector<pair<int, int> >就是储存两个视角中特征点的对应关系
 };
 
 /** The matching result between several pairs of views. */

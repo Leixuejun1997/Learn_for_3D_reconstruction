@@ -32,9 +32,9 @@ public:
     {
         Options (void);
 
-        /** The image for which features are to be computed. */
+        /** The image for which features are to be computed. 要计算特征的图像名*/
         std::string image_embedding;
-        /** The maximum image size given in number of pixels. */
+        /** The maximum image size given in number of pixels. 最大图像大小（以像素为单位）*/
         int max_image_size;
         /** Feature set options. */
         FeatureSet::Options feature_options;

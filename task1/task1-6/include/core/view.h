@@ -70,8 +70,11 @@ public:
 
     /**
      * View meta information that stores key/value pairs and the camera.
+     * 存储关键图像对以及相机参数
      * The key is the INI section name, a dot ".", and the key name.
+     * key是INIsection名字+"."+key名字
      * The value is an arbitrary string (newlines are disallowed).
+     * value是任意字符串（不允许换行）
      */
     struct MetaData
     {

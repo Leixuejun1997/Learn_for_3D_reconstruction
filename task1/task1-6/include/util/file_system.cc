@@ -573,9 +573,9 @@ Directory::scan (std::string const& path)
 
     FindClose(hf);
 #else
-    DIR *dp = ::opendir(path.c_str());
+    DIR *dp = ::opendir(path.c_str());//打开文件夹
     if (dp == nullptr)
-        throw Exception("Cannot open directory: ", std::strerror(errno));
+        throw Exception("Cannot open directory: ", std::strerror(errno));//若无法打开抛出错误
 
     struct dirent *ep;
     while ((ep = ::readdir(dp)))
@@ -589,7 +589,7 @@ Directory::scan (std::string const& path)
         this->back().name = ep->d_name;
         this->back().is_dir = (ep->d_type == DT_DIR);
     }
-    ::closedir(dp);
+    ::closedir(dp);//关闭文件夹
 #endif
 }
 
