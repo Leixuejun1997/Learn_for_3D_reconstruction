@@ -29,28 +29,28 @@ FeatureSet::compute_features (core::ByteImage::Ptr image)
 {
     this->colors.clear();
     this->positions.clear();
-    this->width = image->width();
-    this->height = image->height();
+    this->width = image->width();//获取图像宽度
+    this->height = image->height();//获取图像长度
 
     /* Make sure these are in the right order. Matching relies on it. */
     if (this->opts.feature_types & FEATURE_SIFT)
-        this->compute_sift(image);
+        this->compute_sift(image);//sift描述子计算特征
     if (this->opts.feature_types & FEATURE_SURF)
-        this->compute_surf(image);
+        this->compute_surf(image);//surf描述子计算特征
 }
 
 void
 FeatureSet::normalize_feature_positions (void)
 {
     /* Normalize image coordinates. */
-    float const fwidth = static_cast<float>(this->width);
-    float const fheight = static_cast<float>(this->height);
-    float const fnorm = std::max(fwidth, fheight);
+    float const fwidth = static_cast<float>(this->width);//将宽度转为浮点型
+    float const fheight = static_cast<float>(this->height);//将长度转为浮点型
+    float const fnorm = std::max(fwidth, fheight);//取长和宽中最大的值
     for (std::size_t i = 0; i < this->positions.size(); ++i)
     {
-        math::Vec2f& pos = this->positions[i];
-        pos[0] = (pos[0] + 0.5f - fwidth / 2.0f) / fnorm;
-        pos[1] = (pos[1] + 0.5f - fheight / 2.0f) / fnorm;
+        math::Vec2f& pos = this->positions[i];//取特征点的坐标
+        pos[0] = (pos[0] + 0.5f - fwidth / 2.0f) / fnorm;//（x+0.5-宽/2）/长或宽的大值
+        pos[1] = (pos[1] + 0.5f - fheight / 2.0f) / fnorm;//（y+05-长/2）/长或宽的大值
     }
 }
 

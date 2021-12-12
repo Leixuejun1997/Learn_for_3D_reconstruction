@@ -118,18 +118,18 @@ void features_and_matching(core::Scene::Ptr scene,
 //PairwiseMatching：记录所有匹配的图像对的特征点对应关系
 {
 
-    /* Feature computation for the scene. */
+    /****************************************** 计算特征点 ***********************************/
     //定义计算特征的一些参数
     sfm::bundler::Features::Options feature_opts;
     feature_opts.image_embedding = "original";//要计算特征的图像名
     feature_opts.max_image_size = MAX_PIXELS;//最大图像大小（以像素为单位）6000000
-    feature_opts.feature_options.feature_types = sfm::FeatureSet::FEATURE_SIFT;//定义描述子的类型
+    feature_opts.feature_options.feature_types = sfm::FeatureSet::FEATURE_SIFT;//定义描述子的类型，可以在这里修改你使用的描述子
 
     std::cout << "Computing image features..." << std::endl;
     {
         util::WallTimer timer;//计时器
         sfm::bundler::Features bundler_features(feature_opts);//把参数赋值给bundler_features
-        bundler_features.compute(scene, viewports);
+        bundler_features.compute(scene, viewports);//计算特征点，储存在viewport中
 
         std::cout << "Computing features took " << timer.get_elapsed()
                   << " ms." << std::endl;
@@ -137,20 +137,20 @@ void features_and_matching(core::Scene::Ptr scene,
     }
 
     /* Exhaustive matching between all pairs of views. */
-    sfm::bundler::Matching::Options matching_opts;
+    sfm::bundler::Matching::Options matching_opts;//定义特征匹配的一些参数
     // matching_opts.ransac_opts.max_iterations = 1000;
     // matching_opts.ransac_opts.threshold = 0.0015;
-    matching_opts.ransac_opts.verbose_output = false;
-    matching_opts.use_lowres_matching = false;
+    matching_opts.ransac_opts.verbose_output = false;//不在控制台产生状态消息
+    matching_opts.use_lowres_matching = false;//不使用低分辨率图像剔除误匹配点
     matching_opts.match_num_previous_frames = false;
-    matching_opts.matcher_type = sfm::bundler::Matching::MATCHER_EXHAUSTIVE;
+    matching_opts.matcher_type = sfm::bundler::Matching::MATCHER_EXHAUSTIVE;//匹配器类型
 
     std::cout << "Performing feature matching..." << std::endl;
     {
-        util::WallTimer timer;
-        sfm::bundler::Matching bundler_matching(matching_opts);
+        util::WallTimer timer;//计时器
+        sfm::bundler::Matching bundler_matching(matching_opts);//赋值特征匹配参数
         bundler_matching.init(viewports);
-        bundler_matching.compute(pairwise_matching);
+        bundler_matching.compute(pairwise_matching);//进行特征匹配
         std::cout << "Matching took " << timer.get_elapsed()
                   << " ms." << std::endl;
         std::cout << "Feature matching took " + util::string::get(timer.get_elapsed()) + "ms." << std::endl;

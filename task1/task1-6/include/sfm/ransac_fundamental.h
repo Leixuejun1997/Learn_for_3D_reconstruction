@@ -48,7 +48,7 @@ public:
         double threshold;
 
         /**
-         * Produce status messages on the console.
+         * Produce status messages on the console.在控制台产生状态消息
          */
         bool verbose_output;
     };

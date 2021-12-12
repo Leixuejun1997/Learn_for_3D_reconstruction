@@ -30,12 +30,12 @@ Features::compute (core::Scene::Ptr scene, ViewportList* viewports)
     core::Scene::ViewList const& views = scene->get_views();
 
     /* Initialize viewports. */
-    viewports->clear();
-    viewports->resize(views.size());
+    viewports->clear();//清空
+    viewports->resize(views.size());//重新定义大小
 
-    std::size_t num_views = viewports->size();
-    std::size_t num_done = 0;
-    std::size_t total_features = 0;
+    std::size_t num_views = viewports->size();//图片的个数
+    std::size_t num_done = 0;//记录计算了多少图片的特征点数
+    std::size_t total_features = 0;//总的特征点数
 
     /* Iterate the scene and compute features. */
     for (std::size_t i = 0; i < views.size(); ++i)
@@ -53,14 +53,14 @@ Features::compute (core::Scene::Ptr scene, ViewportList* viewports)
             continue;
 
         core::View::Ptr view = views[i];
-        core::ByteImage::Ptr image = view->get_byte_image
+        core::ByteImage::Ptr image = view->get_byte_image//ByteImage储存照片图像信息
             (this->opts.image_embedding);
         if (image == nullptr)
             continue;
 
         // 对图像进行降采样，使得其满足尺寸限制
         /* Rescale image until maximum image size is met. */
-        util::WallTimer timer;
+        util::WallTimer timer;//计时器
         while (this->opts.max_image_size > 0
             && image->width() * image->height() > this->opts.max_image_size)
             image = core::image::rescale_half_size<uint8_t>(image);
@@ -69,18 +69,19 @@ Features::compute (core::Scene::Ptr scene, ViewportList* viewports)
         // 计算每个视角的特征点
         Viewport* viewport = &viewports->at(i);
         viewport->features.set_options(this->opts.feature_options);
-        viewport->features.compute_features(image);
+        viewport->features.compute_features(image);//计算特征点
         // 对图像特征点的位置进行初始化
+        //对特征坐标进行归一化，使得求解计算稳定
         viewport->features.normalize_feature_positions();
 
         {
-            std::size_t const num_feats = viewport->features.positions.size();
+            std::size_t const num_feats = viewport->features.positions.size();//特征点的数目
             std::cout << "\rView ID "
                 << util::string::get_filled(view->get_id(), 4, '0') << " ("
                 << image->width() << "x" << image->height() << "), "
                 << util::string::get_filled(num_feats, 5, ' ') << " features"
                 << ", took " << timer.get_elapsed() << " ms." << std::endl;
-            total_features += viewport->features.positions.size();
+            total_features += viewport->features.positions.size();//记录总的特征点数
         }
 
         /* Clean up unused embeddings. */

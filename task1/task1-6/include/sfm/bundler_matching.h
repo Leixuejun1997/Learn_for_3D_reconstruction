@@ -58,21 +58,21 @@ public:
     /** Options for feature matching. */
     struct Options
     {
-        /** Options for RANSAC computation of the fundamental matrix. */
+        /** Options for RANSAC computation of the fundamental matrix.选择ransac计算基础矩阵 */
         sfm::RansacFundamental::Options ransac_opts;
-        /** Minimum number of matching features before RANSAC. */
+        /** Minimum number of matching features before RANSAC. ransac之前匹配的最小数目*/
         int min_feature_matches = 24;
-        /** Minimum number of matching features after RANSAC. */
+        /** Minimum number of matching features after RANSAC. ransac之后匹配的最小数目*/
         int min_matching_inliers = 12;
-        /** Perform low-resolution matching to reject unlikely pairs. */
+        /** Perform low-resolution matching to reject unlikely pairs. 使用低分辨率匹配来剔除误匹配*/
         bool use_lowres_matching = false;
-        /** Number of features used for low-res matching. */
+        /** Number of features used for low-res matching. 低分辨率的匹配的特征点数*/
         int num_lowres_features = 500;
-        /** Minimum number of matches from low-res matching. */
+        /** Minimum number of matches from low-res matching. 低分辨率匹配的最低特征点数*/
         int min_lowres_matches = 5;
         /** Only match to a few previous frames. Disabled by default. */
         int match_num_previous_frames = 0;
-        /** Matcher type. Exhaustive by default. */
+        /** Matcher type. Exhaustive by default. 匹配器类型*/
         MatcherType matcher_type = MATCHER_EXHAUSTIVE;
     };
 
