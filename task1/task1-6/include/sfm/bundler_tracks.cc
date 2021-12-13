@@ -48,45 +48,45 @@ unify_tracks(int view1_tid, int view2_tid,
 
 void
 Tracks::compute (PairwiseMatching const& matching,
-    ViewportList* viewports, TrackList* tracks)
+    ViewportList* viewports, TrackList* tracks)//匹配对信息，每张图的具体信息，构建tracks
 {
-    /* Initialize per-viewport track IDs. */
+    /* Initialize per-viewport track IDs. 初始化每一个tracks的ID*/
     for (std::size_t i = 0; i < viewports->size(); ++i)
     {
-        Viewport& viewport = viewports->at(i);
-        viewport.track_ids.resize(viewport.features.positions.size(), -1);
+        Viewport& viewport = viewports->at(i);//获得一张图片
+        viewport.track_ids.resize(viewport.features.positions.size(), -1);//将每个点的初始tracks置为-1
     }
 
-    /* Propagate track IDs. */
+    /* Propagate track IDs. 传播tracks的ID*/
     if (this->opts.verbose_output)
         std::cout << "Propagating track IDs..." << std::endl;
 
-    /* Iterate over all pairwise matchings and create tracks. */
+    /* Iterate over all pairwise matchings and create tracks. 遍历所有的匹配对并创建tracks*/
     tracks->clear();
     for (std::size_t i = 0; i < matching.size(); ++i)
     {
         TwoViewMatching const& tvm = matching[i];
-        Viewport& viewport1 = viewports->at(tvm.view_1_id);
-        Viewport& viewport2 = viewports->at(tvm.view_2_id);
+        Viewport& viewport1 = viewports->at(tvm.view_1_id);//viewports存储所有的图像信息
+        Viewport& viewport2 = viewports->at(tvm.view_2_id);//获取两张匹配对图片的信息
 
-        /* Iterate over matches for a pair. */
+        /* Iterate over matches for a pair. 迭代这两张图片中的匹配对*/
         for (std::size_t j = 0; j < tvm.matches.size(); ++j)
         {
-            CorrespondenceIndex idx = tvm.matches[j];
-            int const view1_tid = viewport1.track_ids[idx.first];
-            int const view2_tid = viewport2.track_ids[idx.second];
-            if (view1_tid == -1 && view2_tid == -1)
+            CorrespondenceIndex idx = tvm.matches[j];//获取这两张图片的第j对特征匹配点
+            int const view1_tid = viewport1.track_ids[idx.first];//匹配对中第一个匹配点所对应的tracks_id
+            int const view2_tid = viewport2.track_ids[idx.second];//匹配对中第二个匹配点所对应的tracks_id
+            if (view1_tid == -1 && view2_tid == -1)//如果两个的track_ID都为-1，说明没有该特征点还没有创建track
             {
-                /* No track ID associated with the match. Create track. */
+                /* No track ID associated with the match. Create track.没有与匹配相关的tracks ID，则重新创造track */
                 viewport1.track_ids[idx.first] = tracks->size();
                 viewport2.track_ids[idx.second] = tracks->size();
                 tracks->push_back(Track());
                 tracks->back().features.push_back(
-                    FeatureReference(tvm.view_1_id, idx.first));
+                    FeatureReference(tvm.view_1_id, idx.first));//tracks的最后一个track的features，第几张图片的第几个特征点
                 tracks->back().features.push_back(
                     FeatureReference(tvm.view_2_id, idx.second));
             }
-            else if (view1_tid == -1 && view2_tid != -1)
+            else if (view1_tid == -1 && view2_tid != -1)//说明第二张图片已经建立了tracks
             {
                 /* Propagate track ID from first to second view. */
                 viewport1.track_ids[idx.first] = view2_tid;

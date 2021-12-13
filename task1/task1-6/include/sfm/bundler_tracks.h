@@ -45,7 +45,7 @@ public:
      * Per-feature track IDs are added to the viewports.
      */
     void compute (PairwiseMatching const& matching,
-        ViewportList* viewports, TrackList* tracks);
+        ViewportList* viewports, TrackList* tracks);//计算tracks的主函数
 
 private:
     int remove_invalid_tracks (ViewportList* viewports, TrackList* tracks);

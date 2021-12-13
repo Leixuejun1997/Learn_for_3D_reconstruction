@@ -81,9 +81,9 @@ struct Track
     void invalidate (void);
     void remove_view (int view_id);
 
-    math::Vec3f pos;
-    math::Vec3uc color;
-    FeatureReferenceList features;
+    math::Vec3f pos;//3D点位置信息
+    math::Vec3uc color;//颜色信息
+    FeatureReferenceList features;//该track拥有的照片ID，拥有的特征点ID
 };
 
 /** The list of all tracks. */
