@@ -38,7 +38,7 @@ public:
     {
         Options (void);
 
-        /** Data source for camera intrinsic estimates. */
+        /** Data source for camera intrinsic estimates. 相机内参估计*/
         Source intrinsics_source;
 
         /** The embedding name in which EXIF tags are stored. */

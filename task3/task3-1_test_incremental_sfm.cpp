@@ -176,17 +176,17 @@ int main(int argc, char *argv[])
     std::cout << "Scene has " << scene->get_views().size() << " views. " << std::endl;
 
     /*进行特征匹配*/
-    sfm::bundler::ViewportList viewports;
-    sfm::bundler::PairwiseMatching pairwise_matching;
-    features_and_matching(scene, &viewports, &pairwise_matching);
+    sfm::bundler::ViewportList viewports;//存储图像的信息
+    sfm::bundler::PairwiseMatching pairwise_matching;//存储图像对信息
+    features_and_matching(scene, &viewports, &pairwise_matching);//进行特征匹配
 
     /* Drop descriptors and embeddings to save memory. */
-    scene->cache_cleanup();
+    scene->cache_cleanup();//清空内存
     for (std::size_t i = 0; i < viewports.size(); ++i)
         viewports[i].features.clear_descriptors();
 
     /* Check if there are some matching images. */
-    if (pairwise_matching.empty())
+    if (pairwise_matching.empty())//看看是否有匹配的图像
     {
         std::cerr << "No matching image pairs. Exiting." << std::endl;
         std::exit(EXIT_FAILURE);
@@ -207,11 +207,11 @@ int main(int argc, char *argv[])
     sfm::bundler::TrackList tracks;
     {
         sfm::bundler::Tracks::Options tracks_options;
-        tracks_options.verbose_output = true;
+        tracks_options.verbose_output = true;//不在控制台显示状态信息
 
         sfm::bundler::Tracks bundler_tracks(tracks_options);
         std::cout << "Computing feature tracks..." << std::endl;
-        bundler_tracks.compute(pairwise_matching, &viewports, &tracks);
+        bundler_tracks.compute(pairwise_matching, &viewports, &tracks);//将所有的特征匹配转换为tracks
         std::cout << "Created a total of " << tracks.size()
                   << " tracks." << std::endl;
     }
