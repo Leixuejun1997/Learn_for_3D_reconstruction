@@ -118,6 +118,8 @@ enforce_fundamental_constraints (FundamentalMatrix* matrix)
      * not have rank 2 and it needs to be enforced. To this end, the SVD is
      * used: F' = USV*, F = UDV* where D = diag(s1, s2, 0) and s1 and s2
      * are the largest and second largest eigenvalues of F.
+     * 约束执行。基础矩阵F秩为2，有7个自由度。然而，从匹配点计算的F'可能秩不为2，需要强制执行。
+     * 为此，使用SVD : F' = USV， F = UDV，其中D = diag(s1, s2, 0)， s1和s2 是F的最大和第二大特征值
      */
     math::Matrix<double, 3, 3> U, S, V;
     math::matrix_svd(*matrix, &U, &S, &V);

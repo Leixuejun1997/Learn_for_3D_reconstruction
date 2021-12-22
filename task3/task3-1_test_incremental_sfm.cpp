@@ -211,28 +211,28 @@ int main(int argc, char *argv[])
 
         sfm::bundler::Tracks bundler_tracks(tracks_options);
         std::cout << "Computing feature tracks..." << std::endl;
-        bundler_tracks.compute(pairwise_matching, &viewports, &tracks);//将所有的特征匹配转换为tracks
+        bundler_tracks.compute(pairwise_matching, &viewports, &tracks);//将所有的特征匹配转换为tracks并储存在tracks中
         std::cout << "Created a total of " << tracks.size()
                   << " tracks." << std::endl;
     }
 
-    /* Remove color data and pairwise matching to save memory. */
+    /* Remove color data and pairwise matching to save memory. 去除颜色数据和匹配对*/
     for (std::size_t i = 0; i < viewports.size(); ++i)
         viewports[i].features.colors.clear();
     pairwise_matching.clear();
 
-    // 计算初始的匹配对
-    sfm::bundler::InitialPair::Result init_pair_result;
+    /********************************************初始匹配对的计算****************************************************/
+    sfm::bundler::InitialPair::Result init_pair_result;//储存视角1、视角2的ID，视角1的相机姿态，视角2的相机姿态
     sfm::bundler::InitialPair::Options init_pair_opts;
     // init_pair_opts.homography_opts.max_iterations = 1000;
     // init_pair_opts.homography_opts.threshold = 0.005f;
     init_pair_opts.homography_opts.verbose_output = false;
-    init_pair_opts.max_homography_inliers = 0.8f;
+    init_pair_opts.max_homography_inliers = 0.8f;//最大单应性内点数为80%
     init_pair_opts.verbose_output = true;
 
     // 开始计算初始的匹配对
-    sfm::bundler::InitialPair init_pair(init_pair_opts);
-    init_pair.initialize(viewports, tracks);
+    sfm::bundler::InitialPair init_pair(init_pair_opts);//将刚刚上面的参数赋值给初始化类
+    init_pair.initialize(viewports, tracks);//初始化
     init_pair.compute_pair(&init_pair_result);
     if (init_pair_result.view_1_id < 0 || init_pair_result.view_2_id < 0 || init_pair_result.view_1_id >= static_cast<int>(viewports.size()) || init_pair_result.view_2_id >= static_cast<int>(viewports.size()))
     {

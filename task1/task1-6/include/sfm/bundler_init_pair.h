@@ -38,21 +38,25 @@ public:
         /**
          * The algorithm tries to explain the matches using a homography.
          * The homograhy is computed using RANSAC with the given options.
+         * 该算法尝试使用单应性来解释匹配，单应性根据RANSAC来计算
          */
         RansacHomography::Options homography_opts;
 
         /**
          * The maximum percentage of homography inliers.
+         * 单应性最大内点的百分比
          */
         float max_homography_inliers;
 
         /**
          * Minimum number of pair matches. Minimum is 8.
+         * 最小匹配对的数量：8
          */
         int min_num_matches;
 
         /**
          * Minimum triangulation angle of tracks (in radians).
+         * track的最小三角化角度
          */
         double min_triangulation_angle;
 
@@ -64,14 +68,14 @@ public:
 
     /**
      * The resulting initial pair with view IDs and relative camera pose.
-     * If no initial pair could be found, both view IDs are set to -1.
+     * If no initial pair could be found, both view IDs are set to -1.如果没有找到初始的视角ID，则将视角ID都置为-1
      */
     struct Result
     {
-        int view_1_id;
-        int view_2_id;
-        CameraPose view_1_pose;
-        CameraPose view_2_pose;
+        int view_1_id;//视角1的ID
+        int view_2_id;//视角2的ID
+        CameraPose view_1_pose;//视角1的相机姿态
+        CameraPose view_2_pose;//视角2的相机姿态
     };
 
 public:
@@ -86,9 +90,9 @@ public:
 private:
     struct CandidatePair
     {
-        int view_1_id;
-        int view_2_id;
-        Correspondences2D2D matches;
+        int view_1_id;//视角1的ID
+        int view_2_id;//视角2的ID
+        Correspondences2D2D matches;//视角1-2的匹配点的信息
         bool operator< (CandidatePair const& other) const;
     };
     typedef std::vector<CandidatePair> CandidatePairs;
@@ -131,7 +135,7 @@ InitialPair::InitialPair (Options const& options)
 }
 
 inline void
-InitialPair::initialize (ViewportList const& viewports, TrackList const& tracks)
+InitialPair::initialize (ViewportList const& viewports, TrackList const& tracks)//inline是内联函数关键字，可以解决频繁调用的函数消耗栈空间的问题
 {
     this->viewports = &viewports;
     this->tracks = &tracks;

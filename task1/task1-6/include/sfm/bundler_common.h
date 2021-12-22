@@ -67,8 +67,8 @@ struct FeatureReference
 {
     FeatureReference (int view_id, int feature_id);
 
-    int view_id;
-    int feature_id;
+    int view_id;//视角ID
+    int feature_id;//构成这个track的特征点的ID
 };
 
 /** The list of all feature references inside a track. */
