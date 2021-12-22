@@ -62,11 +62,11 @@ public:
     {
         Options (void);
 
-        /** Threshold on reprojection error for outlier detection. */
+        /** Threshold on reprojection error for outlier detection. 离群点检测的重投影误差阈值：0.01*/
         double error_threshold;
-        /** Threshold on the triangulation angle (in radians). */
+        /** Threshold on the triangulation angle (in radians). 三角化的角度阈值（弧度为单位）：1弧度*/
         double angle_threshold;
-        /** Minimal number of views with small error (inliers). */
+        /** Minimal number of views with small error (inliers). 具有小错误的最小视图数(inliers)：2*/
         int min_num_views;
     };
 
@@ -74,13 +74,13 @@ public:
     {
         Statistics (void);
 
-        /** The number of successfully triangulated tracks. */
+        /** The number of successfully triangulated tracks. 成功三角化的tracks：0*/
         int num_new_tracks;
-        /** Number of tracks with too large reprojection error. */
+        /** Number of tracks with too large reprojection error. 有大的投影误差的tracks的数量：0*/
         int num_large_error;
-        /** Number of tracks that appeared behind the camera. */
+        /** Number of tracks that appeared behind the camera. 在相机之后的tracks数量：0*/
         int num_behind_camera;
-        /** Number of tracks with too small triangulation angle. */
+        /** Number of tracks with too small triangulation angle. 三角化角度很小的tracks数量：0*/
         int num_too_small_angle;
     };
 

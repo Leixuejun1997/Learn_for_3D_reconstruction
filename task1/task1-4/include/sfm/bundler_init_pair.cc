@@ -45,7 +45,7 @@ void InitialPair::compute_pair(Result *result) // Result：视角1、2的ID，�
      */
     bool found_pair = false;
     std::size_t found_pair_id = std::numeric_limits<std::size_t>::max(); //定义ID为最大数
-    std::vector<float> pair_scores(candidates.size(), 0.0f);             //定义一个float的容器，大小为candidates的大小，并赋值为0
+    std::vector<float> pair_scores(candidates.size(), 0.0f);             //定义一个float的容器，大小为candidates的大小，并赋值为0，用于储存每个匹配对的分数
 #pragma omp parallel for schedule(dynamic)                               //动态多线程
     for (std::size_t i = 0; i < candidates.size(); ++i)
     {
@@ -84,15 +84,15 @@ void InitialPair::compute_pair(Result *result) // Result：视角1、2的ID，�
         }
         /* Rejects pairs with bad triangulation angle. */
         double const angle = this->angle_for_pose(candidate, pose1, pose2);//计算两个视角的角度
-        pair_scores[i] = this->score_for_pair(candidate, num_inliers, angle);
+        pair_scores[i] = this->score_for_pair(candidate, num_inliers, angle);//计算每对视角的得分
         this->debug_output(candidate, num_inliers, angle);
-        if (angle < this->opts.min_triangulation_angle)
+        if (angle < this->opts.min_triangulation_angle)//如果三角化的角度小于阈值，则换下一对
             continue;
 
         // 标准4： 成功的三角量测的个数>50%
         /* Run triangulation to ensure correct pair */
-        Triangulate::Options triangulate_opts;
-        Triangulate triangulator(triangulate_opts);
+        Triangulate::Options triangulate_opts;//都使用默认参数
+        Triangulate triangulator(triangulate_opts);//赋值
         std::vector<CameraPose const *> poses;
         poses.push_back(&pose1);
         poses.push_back(&pose2);
@@ -104,10 +104,10 @@ void InitialPair::compute_pair(Result *result) // Result：视角1、2的ID，�
             positions[0] = math::Vec2f(candidate.matches[j].p1);
             positions[1] = math::Vec2f(candidate.matches[j].p2);
             math::Vec3d pos3d;
-            if (triangulator.triangulate(poses, positions, &pos3d, &stats))
+            if (triangulator.triangulate(poses, positions, &pos3d, &stats))//进行三角化
                 successful_triangulations += 1;
         }
-        if (successful_triangulations * 2 < candidate.matches.size())
+        if (successful_triangulations * 2 < candidate.matches.size())//如果成功三角化的数量不满足要求，换下一对
             continue;
 
 #pragma omp critical
@@ -122,15 +122,15 @@ void InitialPair::compute_pair(Result *result) // Result：视角1、2的ID，�
         }
     }
 
-    /* Return if a pair satisfying all thresholds has been found. */
+    /* Return if a pair satisfying all thresholds has been found. 如果有一对图像对满足所有条件则返回*/
     if (found_pair)
         return;
 
-    /* Return pair with best score (larger than 0.0). */
+    /* Return pair with best score (larger than 0.0). 如果没有找到满足所有条件的图像对，则返回分数最大的图像对（大于0.0）*/
     std::cout << "Searching for pair with best score..." << std::endl;
-    float best_score = 0.0f;
-    std::size_t best_pair_id = 0;
-    for (std::size_t i = 0; i < pair_scores.size(); ++i)
+    float best_score = 0.0f;//最大的分数
+    std::size_t best_pair_id = 0;//最好的图像对ID
+    for (std::size_t i = 0; i < pair_scores.size(); ++i)//找最大分数
     {
         if (pair_scores[i] <= best_score)
             continue;
@@ -139,7 +139,7 @@ void InitialPair::compute_pair(Result *result) // Result：视角1、2的ID，�
         best_pair_id = i;
     }
 
-    /* Recompute pose for pair with best score. */
+    /* Recompute pose for pair with best score. 为有最大分数的图像对重新计算pos*/
     if (best_score > 0.0f)
     {
         result->view_1_id = candidates[best_pair_id].view_1_id;
@@ -276,7 +276,7 @@ bool InitialPair::compute_pose(CandidatePair const &candidate,
     for (std::size_t i = 0; i < poses.size(); ++i)
     {
         poses[i].K = pose2->K;
-        if (is_consistent_pose(candidate.matches[0], *pose1, poses[i]))
+        if (is_consistent_pose(candidate.matches[0], *pose1, poses[i]))//将一个点转换到相机坐标系下，Z值大于0，则分解的R，T满足条件
         {
             *pose2 = poses[i];
             found_pose = true;
@@ -291,42 +291,42 @@ InitialPair::angle_for_pose(CandidatePair const &candidate,
                             CameraPose const &pose1, CameraPose const &pose2)
 {
     /* Compute transformation from image coordinates to viewing direction. */
-    math::Matrix3d T1 = pose1.R.transposed() * math::matrix_inverse(pose1.K);
-    math::Matrix3d T2 = pose2.R.transposed() * math::matrix_inverse(pose2.K);
+    math::Matrix3d T1 = pose1.R.transposed() * math::matrix_inverse(pose1.K);//T1=R1^T*K1^-1
+    math::Matrix3d T2 = pose2.R.transposed() * math::matrix_inverse(pose2.K);//T2=R2^T*K2^-1
 
-    /* Compute triangulation angle for each correspondence. */
+    /* Compute triangulation angle for each correspondence. 计算每对对应点的角度*/
     std::vector<double> cos_angles;
     cos_angles.reserve(candidate.matches.size());
     for (std::size_t i = 0; i < candidate.matches.size(); ++i)
     {
         Correspondence2D2D const &match = candidate.matches[i];
         math::Vec3d p1(match.p1[0], match.p1[1], 1.0);
-        p1 = T1.mult(p1).normalized();
+        p1 = T1.mult(p1).normalized();//获得3D点与2D点的单位方向向量
         math::Vec3d p2(match.p2[0], match.p2[1], 1.0);
-        p2 = T2.mult(p2).normalized();
-        cos_angles.push_back(p1.dot(p2));
+        p2 = T2.mult(p2).normalized();//获得3D点与2D点的单位方向向量
+        cos_angles.push_back(p1.dot(p2));//两个方向向量点乘cos0=n1*n2
     }
 
     /* Return 50% median. */
     std::size_t median_index = cos_angles.size() / 2;
     std::nth_element(cos_angles.begin(),
-                     cos_angles.begin() + median_index, cos_angles.end());
-    double const cos_angle = math::clamp(cos_angles[median_index], -1.0, 1.0);
-    return std::acos(cos_angle);
+                     cos_angles.begin() + median_index, cos_angles.end());//获得中位数
+    double const cos_angle = math::clamp(cos_angles[median_index], -1.0, 1.0);//取（-1，1）之间最大值
+    return std::acos(cos_angle);//arcos()
 }
 
 float InitialPair::score_for_pair(CandidatePair const &candidate,
                                   std::size_t num_inliers, double angle)
 {
-    float const matches = static_cast<float>(candidate.matches.size());
-    float const inliers = static_cast<float>(num_inliers) / matches;
-    float const angle_d = MATH_RAD2DEG(angle);
+    float const matches = static_cast<float>(candidate.matches.size());//匹配对的数量
+    float const inliers = static_cast<float>(num_inliers) / matches;//内点/总匹配对数
+    float const angle_d = MATH_RAD2DEG(angle);//将弧度转换为角度
 
-    /* Score for matches (min: 20, good: 200). */
+    /* Score for matches (min: 20, good: 200). 匹配点的分数，最少20，最多200对*/
     float f1 = 2.0 / (1.0 + std::exp((20.0 - matches) * 6.0 / 200.0)) - 1.0;
-    /* Score for angle (min 1 degree, good 8 degree). */
+    /* Score for angle (min 1 degree, good 8 degree). 角度分数，最小1度，最大8度*/
     float f2 = 2.0 / (1.0 + std::exp((1.0 - angle_d) * 6.0 / 8.0)) - 1.0;
-    /* Score for H-Inliers (max 70%, good 40%). */
+    /* Score for H-Inliers (max 70%, good 40%). 单应性矩阵的内点比例，最大70%，最小40%*/
     float f3 = 2.0 / (1.0 + std::exp((inliers - 0.7) * 6.0 / 0.4)) - 1.0;
 
     f1 = math::clamp(f1, 0.0f, 1.0f);

@@ -37,20 +37,23 @@ SFM_NAMESPACE_BEGIN
 class RansacPoseP3P
 {
 public:
-   struct Options
+    struct Options
     {
-        Options (void);
+        Options(void);
 
         /**
          * The number of RANSAC iterations. Defaults to 1000.
          * Function compute_ransac_iterations() can be used to estimate the
          * required number of iterations for a certain RANSAC success rate.
+         * RANSAC迭代次数。默认为1000。
+         *函数compute_ransac_iterations()可以用来估计一定RANSAC成功率所需的迭代次数，就是计算RANSAC的迭代次数0
          */
         int max_iterations;
 
         /**
          * Threshold used to determine inliers. Defaults to 0.005.
          * This threshold assumes that the input points are normalized.
+         * 用于确定内点的阈值。默认为0.005。这个阈值假设输入点是标准化的
          */
         double threshold;
 
@@ -70,24 +73,24 @@ public:
     };
 
 public:
-    explicit RansacPoseP3P (Options const& options);
+    explicit RansacPoseP3P(Options const &options);
 
-    void estimate (Correspondences2D3D const& corresp,
-        math::Matrix<double, 3, 3> const& k_matrix,
-        Result* result) const;
+    void estimate(Correspondences2D3D const &corresp,
+                  math::Matrix<double, 3, 3> const &k_matrix,
+                  Result *result) const;
 
 private:
     typedef math::Matrix<double, 3, 4> Pose;
     typedef std::vector<Pose> PutativePoses;
 
 private:
-    void compute_p3p (Correspondences2D3D const& corresp,
-        math::Matrix<double, 3, 3> const& inv_k_matrix,
-        PutativePoses* poses) const;
+    void compute_p3p(Correspondences2D3D const &corresp,
+                     math::Matrix<double, 3, 3> const &inv_k_matrix,
+                     PutativePoses *poses) const;
 
-    void find_inliers (Correspondences2D3D const& corresp,
-        math::Matrix<double, 3, 3> const& k_matrix,
-        Pose const& pose, std::vector<int>* inliers) const;
+    void find_inliers(Correspondences2D3D const &corresp,
+                      math::Matrix<double, 3, 3> const &k_matrix,
+                      Pose const &pose, std::vector<int> *inliers) const;
 
 private:
     Options opts;
@@ -95,11 +98,8 @@ private:
 
 /* ------------------------ Implementation ------------------------ */
 
-inline
-RansacPoseP3P::Options::Options (void)
-    : max_iterations(1000)
-    , threshold(0.005)
-    , verbose_output(false)
+inline RansacPoseP3P::Options::Options(void)
+    : max_iterations(1000), threshold(0.005), verbose_output(false)
 {
 }
 

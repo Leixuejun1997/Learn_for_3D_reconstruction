@@ -233,12 +233,13 @@ int main(int argc, char *argv[])
     // 开始计算初始的匹配对
     sfm::bundler::InitialPair init_pair(init_pair_opts);//将刚刚上面的参数赋值给初始化类
     init_pair.initialize(viewports, tracks);//初始化
-    init_pair.compute_pair(&init_pair_result);
+    init_pair.compute_pair(&init_pair_result);//根据四条标准计算初始匹配对
+    //如果没有找到最佳的初始匹配对
     if (init_pair_result.view_1_id < 0 || init_pair_result.view_2_id < 0 || init_pair_result.view_1_id >= static_cast<int>(viewports.size()) || init_pair_result.view_2_id >= static_cast<int>(viewports.size()))
     {
 
-        std::cerr << "Error finding initial pair, exiting!" << std::endl;
-        std::cerr << "Try manually specifying an initial pair." << std::endl;
+        std::cerr << "Error finding initial pair, exiting!查找初始匹配对错误，退出!" << std::endl;
+        std::cerr << "Try manually specifying an initial pair.尝试手动指定初始匹配对" << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -246,26 +247,26 @@ int main(int argc, char *argv[])
               << " and " << init_pair_result.view_2_id
               << " as initial pair." << std::endl;
 
-    /* Incrementally compute full bundle. */
-    sfm::bundler::Incremental::Options incremental_opts;
-    incremental_opts.pose_p3p_opts.max_iterations = 1000;
-    incremental_opts.pose_p3p_opts.threshold = 0.005f;
+    /* Incrementally compute full bundle. 增量开始全局BA*/
+    sfm::bundler::Incremental::Options incremental_opts;//设置BA的参数
+    incremental_opts.pose_p3p_opts.max_iterations = 1000;//RANSAC迭代的次数
+    incremental_opts.pose_p3p_opts.threshold = 0.005f;//确定内点的阈值
     incremental_opts.pose_p3p_opts.verbose_output = false;
-    incremental_opts.track_error_threshold_factor = TRACK_ERROR_THRES_FACTOR;
-    incremental_opts.new_track_error_threshold = NEW_TRACK_ERROR_THRES;
-    incremental_opts.min_triangulation_angle = MATH_DEG2RAD(1.0);
+    incremental_opts.track_error_threshold_factor = TRACK_ERROR_THRES_FACTOR;//大误差tracks的阈值(中值误差因子)10.0f
+    incremental_opts.new_track_error_threshold = NEW_TRACK_ERROR_THRES;//新三角化的tracks的重投影误差阈值0.01f
+    incremental_opts.min_triangulation_angle = MATH_DEG2RAD(1.0);//RAD中tracks三角化的最小角度
     incremental_opts.ba_fixed_intrinsics = false;
     // incremental_opts.ba_shared_intrinsics = conf.shared_intrinsics;
-    incremental_opts.verbose_output = true;
-    incremental_opts.verbose_ba = true;
+    incremental_opts.verbose_output = true;//在控制台上生成状态消息
+    incremental_opts.verbose_ba = true;//在控制台上生成详细的BA消息
 
-    /* Initialize viewports with initial pair. */
-    viewports[init_pair_result.view_1_id].pose = init_pair_result.view_1_pose;
+    /* Initialize viewports with initial pair. 将存储所有图片的容器中的初始图像对的pos给更新*/
+    viewports[init_pair_result.view_1_id].pose = init_pair_result.view_1_pose;//将存储所有图片的容器中的初始图像对的pos给更新
     viewports[init_pair_result.view_2_id].pose = init_pair_result.view_2_pose;
 
-    /* Initialize the incremental bundler and reconstruct first tracks. */
-    sfm::bundler::Incremental incremental(incremental_opts);
-    incremental.initialize(&viewports, &tracks);
+    /* Initialize the incremental bundler and reconstruct first tracks. 初始化增量bundler并重构第一个tracks*/
+    sfm::bundler::Incremental incremental(incremental_opts);//将BA的参数赋值
+    incremental.initialize(&viewports, &tracks);//初始化，将各个对象赋值给incremental
 
     // 对当前两个视角进行track重建，并且如果track存在外点，则将每个track的外点剥离成新的track
     incremental.triangulate_new_tracks(2);

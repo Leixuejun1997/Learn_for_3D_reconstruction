@@ -83,7 +83,7 @@ is_consistent_pose (Correspondence2D2D const& match,
     math::Vector<double, 3> x = triangulate_match(match, pose1, pose2);
     math::Vector<double, 3> x1 = pose1.R * x + pose1.t;
     math::Vector<double, 3> x2 = pose2.R * x + pose2.t;
-    return x1[2] > 0.0f && x2[2] > 0.0f;
+    return x1[2] > 0.0f && x2[2] > 0.0f;//相机坐标系下的z值大于0，则从E中分解的R，T满足要求
 }
 
 /* --------------- Higher-level triangulation class --------------- */

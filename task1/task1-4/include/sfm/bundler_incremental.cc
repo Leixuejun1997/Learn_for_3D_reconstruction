@@ -36,10 +36,10 @@ Incremental::initialize (ViewportList* viewports, TrackList* tracks,
     if (this->viewports->empty())
         throw std::invalid_argument("No viewports given");
 
-    /* Check if at least two cameras are initialized. */
+    /* Check if at least two cameras are initialized. 检查至少两个相机被初始化*/
     std::size_t num_valid_cameras = 0;
     for (std::size_t i = 0; i < this->viewports->size(); ++i)
-        if (this->viewports->at(i).pose.is_valid())
+        if (this->viewports->at(i).pose.is_valid())//视角有效
             num_valid_cameras += 1;
     if (num_valid_cameras < 2)
         throw std::invalid_argument("Two or more valid cameras required");
