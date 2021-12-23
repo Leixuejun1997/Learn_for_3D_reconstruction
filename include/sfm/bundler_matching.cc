@@ -65,8 +65,8 @@ Matching::compute (PairwiseMatching* pairwise_matching)
 
     // 视角的个数
     std::size_t num_viewports = this->viewports->size();
-    std::size_t num_pairs = num_viewports * (num_viewports - 1) / 2;
-    std::size_t num_done = 0;
+    std::size_t num_pairs = num_viewports * (num_viewports - 1) / 2;//总的匹配对数：n*(n-1)/2
+    std::size_t num_done = 0;//记录已经匹配的数量
 
     if (this->progress != nullptr)
     {
@@ -74,10 +74,10 @@ Matching::compute (PairwiseMatching* pairwise_matching)
         this->progress->num_done = 0;
     }
 
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)//动态多线程：谁有空，给谁分配一次迭代让它去跑
     for (std::size_t i = 0; i < num_pairs; ++i)
     {
-#pragma omp critical
+#pragma omp critical//如果一条线程正在一个CRITICAL区域执行而另一个线程到达这个区域，并企图执行，那么它将会被阻塞，直到第一个线程离开这个区域.
         {
             num_done += 1;
             if (this->progress != nullptr)

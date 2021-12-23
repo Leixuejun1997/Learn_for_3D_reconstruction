@@ -29,7 +29,7 @@ class SparseMatrix
 {
 public:
     /** Triplet with row/col index, and the actual value. */
-    struct Triplet//三元组
+    struct Triplet
     {
         Triplet (void) = default;
         Triplet (std::size_t row, std::size_t col, T const& value);
@@ -60,9 +60,9 @@ public:
     DenseVector<T> multiply (DenseVector<T> const& rhs) const;
     SparseMatrix diagonal_matrix (void) const;
 
-    std::size_t num_non_zero (void) const;//非零元素个数
-    std::size_t num_rows (void) const;//稀疏矩阵的行数
-    std::size_t num_cols (void) const;//稀疏矩阵的列数
+    std::size_t num_non_zero (void) const;
+    std::size_t num_rows (void) const;
+    std::size_t num_cols (void) const;
     T* begin (void);
     T* end (void);
 

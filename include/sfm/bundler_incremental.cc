@@ -25,9 +25,8 @@
 SFM_NAMESPACE_BEGIN
 SFM_BUNDLER_NAMESPACE_BEGIN
 
-void
-Incremental::initialize (ViewportList* viewports, TrackList* tracks,
-    SurveyPointList* survey_points)
+void Incremental::initialize(ViewportList *viewports, TrackList *tracks,
+                             SurveyPointList *survey_points)
 {
     this->viewports = viewports;
     this->tracks = tracks;
@@ -36,10 +35,10 @@ Incremental::initialize (ViewportList* viewports, TrackList* tracks,
     if (this->viewports->empty())
         throw std::invalid_argument("No viewports given");
 
-    /* Check if at least two cameras are initialized. */
+    /* Check if at least two cameras are initialized. 检查至少两个相机被初始化*/
     std::size_t num_valid_cameras = 0;
     for (std::size_t i = 0; i < this->viewports->size(); ++i)
-        if (this->viewports->at(i).pose.is_valid())
+        if (this->viewports->at(i).pose.is_valid()) //视角有效
             num_valid_cameras += 1;
     if (num_valid_cameras < 2)
         throw std::invalid_argument("Two or more valid cameras required");
@@ -47,24 +46,23 @@ Incremental::initialize (ViewportList* viewports, TrackList* tracks,
     /* Set track positions to invalid state. */
     for (std::size_t i = 0; i < tracks->size(); ++i)
     {
-        Track& track = tracks->at(i);
+        Track &track = tracks->at(i);
         track.invalidate();
     }
 }
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::find_next_views (std::vector<int>* next_views)
+void Incremental::find_next_views(std::vector<int> *next_views)
 {
     /* Create mapping from valid tracks to view ID. */
-    std::vector<std::pair<int, int> > valid_tracks(this->viewports->size());
+    std::vector<std::pair<int, int>> valid_tracks(this->viewports->size());
     for (std::size_t i = 0; i < valid_tracks.size(); ++i)
         valid_tracks[i] = std::make_pair(0, static_cast<int>(i));
 
     for (std::size_t i = 0; i < this->tracks->size(); ++i)
     {
-        Track const& track = this->tracks->at(i);
+        Track const &track = this->tracks->at(i);
         if (!track.is_valid())
             continue;
 
@@ -91,11 +89,10 @@ Incremental::find_next_views (std::vector<int>* next_views)
 
 /* ---------------------------------------------------------------- */
 // 通过p3p重建新视角的相机姿态，并通过RANSAC去除错误的Tracks
-bool
-Incremental::reconstruct_next_view (int view_id)
+bool Incremental::reconstruct_next_view(int view_id)
 {
-    Viewport const& viewport = this->viewports->at(view_id);
-    FeatureSet const& features = viewport.features;
+    Viewport const &viewport = this->viewports->at(view_id);
+    FeatureSet const &features = viewport.features;
 
     /* Collect all 2D-3D correspondences. */
     Correspondences2D3D corr;
@@ -106,32 +103,33 @@ Incremental::reconstruct_next_view (int view_id)
         int const track_id = viewport.track_ids[i];
         if (track_id < 0 || !this->tracks->at(track_id).is_valid())
             continue;
-        math::Vec2f const& pos2d = features.positions[i];
-        math::Vec3f const& pos3d = this->tracks->at(track_id).pos;
+        math::Vec2f const &pos2d = features.positions[i];
+        math::Vec3f const &pos3d = this->tracks->at(track_id).pos;
 
         corr.push_back(Correspondence2D3D());
-        Correspondence2D3D& c = corr.back();
+        Correspondence2D3D &c = corr.back();
         std::copy(pos3d.begin(), pos3d.end(), c.p3d);
         std::copy(pos2d.begin(), pos2d.end(), c.p2d);
         track_ids.push_back(track_id);
         feature_ids.push_back(i);
     }
 
-    if (this->opts.verbose_output){
+    if (this->opts.verbose_output)
+    {
         std::cout << "Collected " << corr.size()
-            << " 2D-3D correspondences." << std::endl;
+                  << " 2D-3D correspondences." << std::endl;
     }
 
     /* Initialize a temporary camera. */
     CameraPose temp_camera;
     temp_camera.set_k_matrix(viewport.focal_length, 0.0, 0.0);
 
-//    std::ofstream fout("./examples/task2/correspondence2D3D.txt");
-//    assert(fout.is_open());
-//    fout<<corr.size()<<std::endl;
-//    for(int kk=0; kk<corr.size(); kk++){
-//        fout<<corr[kk].p3d[0]<<" "<<corr[kk].p3d[1]<<" "<<corr[kk].p3d[2]<<" "<<corr[kk].p2d[0]<<" "<<corr[kk].p2d[1]<<std::endl;
-//    }
+    //    std::ofstream fout("./examples/task2/correspondence2D3D.txt");
+    //    assert(fout.is_open());
+    //    fout<<corr.size()<<std::endl;
+    //    for(int kk=0; kk<corr.size(); kk++){
+    //        fout<<corr[kk].p3d[0]<<" "<<corr[kk].p3d[1]<<" "<<corr[kk].p3d[2]<<" "<<corr[kk].p2d[0]<<" "<<corr[kk].p2d[1]<<std::endl;
+    //    }
 
     /* Compute pose from 2D-3D correspondences using P3P. */
     util::WallTimer timer;
@@ -142,20 +140,21 @@ Incremental::reconstruct_next_view (int view_id)
     }
 
     /* Cancel if inliers are below a 33% threshold. */
-    if (3 * ransac_result.inliers.size() < corr.size()){
+    if (3 * ransac_result.inliers.size() < corr.size())
+    {
         if (this->opts.verbose_output)
             std::cout << "Only " << ransac_result.inliers.size()
-                << " 2D-3D correspondences inliers ("
-                << (100 * ransac_result.inliers.size() / corr.size())
-                << "%). Skipping view." << std::endl;
+                      << " 2D-3D correspondences inliers ("
+                      << (100 * ransac_result.inliers.size() / corr.size())
+                      << "%). Skipping view." << std::endl;
         return false;
     }
     else if (this->opts.verbose_output)
     {
         std::cout << "Selected " << ransac_result.inliers.size()
-            << " 2D-3D correspondences inliers ("
-            << (100 * ransac_result.inliers.size() / corr.size())
-            << "%), took " << timer.get_elapsed() << "ms." << std::endl;
+                  << " 2D-3D correspondences inliers ("
+                  << (100 * ransac_result.inliers.size() / corr.size())
+                  << "%), took " << timer.get_elapsed() << "ms." << std::endl;
     }
 
     /*
@@ -177,7 +176,7 @@ Incremental::reconstruct_next_view (int view_id)
 
     /* Commit camera using known K and computed R and t. */
     {
-        CameraPose& pose = this->viewports->at(view_id).pose;
+        CameraPose &pose = this->viewports->at(view_id).pose;
         pose = temp_camera;
         pose.R = ransac_result.pose.delete_col(3);
         pose.t = ransac_result.pose.col(3);
@@ -185,8 +184,8 @@ Incremental::reconstruct_next_view (int view_id)
         if (this->opts.verbose_output)
         {
             std::cout << "Reconstructed camera "
-                << view_id << " with focal length "
-                << pose.get_focal_length() << std::endl;
+                      << view_id << " with focal length "
+                      << pose.get_focal_length() << std::endl;
         }
     }
 
@@ -198,20 +197,20 @@ Incremental::reconstruct_next_view (int view_id)
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::try_registration () {
+void Incremental::try_registration()
+{
     std::vector<math::Vec3d> p0;
     std::vector<math::Vec3d> p1;
 
     for (std::size_t i = 0; i < this->survey_points->size(); ++i)
     {
-        SurveyPoint const& survey_point = this->survey_points->at(i);
+        SurveyPoint const &survey_point = this->survey_points->at(i);
 
         std::vector<math::Vec2f> pos;
-        std::vector<CameraPose const*> poses;
+        std::vector<CameraPose const *> poses;
         for (std::size_t j = 0; j < survey_point.observations.size(); ++j)
         {
-            SurveyObservation const& obs = survey_point.observations[j];
+            SurveyObservation const &obs = survey_point.observations[j];
             int const view_id = obs.view_id;
             if (!this->viewports->at(view_id).pose.is_valid())
                 continue;
@@ -240,8 +239,8 @@ Incremental::try_registration () {
     /* Transform every camera. */
     for (std::size_t i = 0; i < this->viewports->size(); ++i)
     {
-        Viewport& view = this->viewports->at(i);
-        CameraPose& pose = view.pose;
+        Viewport &view = this->viewports->at(i);
+        CameraPose &pose = view.pose;
         if (!pose.is_valid())
             continue;
 
@@ -252,7 +251,7 @@ Incremental::try_registration () {
     /* Transform every point. */
     for (std::size_t i = 0; i < this->tracks->size(); ++i)
     {
-        Track& track = this->tracks->at(i);
+        Track &track = this->tracks->at(i);
         if (!track.is_valid())
             continue;
 
@@ -264,68 +263,71 @@ Incremental::try_registration () {
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::triangulate_new_tracks (int min_num_views)
+void Incremental::triangulate_new_tracks(int min_num_views)
 {
-    Triangulate::Options triangulate_opts;
-    triangulate_opts.error_threshold = this->opts.new_track_error_threshold;
-    triangulate_opts.angle_threshold = this->opts.min_triangulation_angle;
-    triangulate_opts.min_num_views = min_num_views;
+    Triangulate::Options triangulate_opts;                                   //设置三角化参数
+    triangulate_opts.error_threshold = this->opts.new_track_error_threshold; //离群点检测的重投影误差阈值：0.01
+    triangulate_opts.angle_threshold = this->opts.min_triangulation_angle;   //三角化的角度阈值（弧度为单位）：1弧度
+    triangulate_opts.min_num_views = min_num_views;                          //具有小错误的最小视图数(inliers)：2
 
     Triangulate::Statistics stats;
-    Triangulate triangulator(triangulate_opts);
+    Triangulate triangulator(triangulate_opts); //将三角化参数赋值
 
     std::size_t initial_tracks_size = this->tracks->size();
-    for (std::size_t i = 0; i < this->tracks->size(); ++i){
+    for (std::size_t i = 0; i < this->tracks->size(); ++i)//遍历所有的tracks
+    {
 
-        /* Skip tracks that have already been triangulated. */
-        Track const& track = this->tracks->at(i);
-        if (track.is_valid())
+        /* Skip tracks that have already been triangulated. 跳过已经三角化的tracks*/
+        Track const &track = this->tracks->at(i);//获得其中一个track
+        if (track.is_valid()) //通过is_valid()函数判断tracks是否以及三角化过
             continue;
 
         /*
          * Triangulate the track using all cameras. There can be more than two
          * cameras if the track was rejected in previous triangulation attempts.
+         * 用所有摄像头三角化tracks。如果tracks在以前的三角测量尝试中被拒绝，可以有两个以上的摄像机。
          */
-        std::vector<math::Vec2f> pos;
-        std::vector<CameraPose const*> poses;
-        std::vector<std::size_t> view_ids;
-        std::vector<std::size_t> feature_ids;
-        for (std::size_t j = 0; j < track.features.size(); ++j){
+        std::vector<math::Vec2f> pos;//存储一个track中所有特征点
+        std::vector<CameraPose const *> poses;//存储一个track中的所有视角信息
+        std::vector<std::size_t> view_ids;//存储一个track中所有视角ID
+        std::vector<std::size_t> feature_ids;//存储一个track中所有特征点ID
+        for (std::size_t j = 0; j < track.features.size(); ++j)//遍历有一个track中所有特征点
+        {
 
-            int const view_id = track.features[j].view_id;
+            int const view_id = track.features[j].view_id;//获得一个track中一个视角
             if (!this->viewports->at(view_id).pose.is_valid())
                 continue;
-            int const feature_id = track.features[j].feature_id;
+            int const feature_id = track.features[j].feature_id;//获得一个track中一个特征点
             pos.push_back(this->viewports->at(view_id)
-                .features.positions[feature_id]);
-            poses.push_back(&this->viewports->at(view_id).pose);
+                              .features.positions[feature_id]);//2D信息
+            poses.push_back(&this->viewports->at(view_id).pose);//相机的K，R，T
             view_ids.push_back(view_id);
             feature_ids.push_back(feature_id);
         }
 
-        /* Skip tracks with too few valid cameras. */
+        /* Skip tracks with too few valid cameras. 跳过有效摄像头太少的tracks*/
         if ((int)poses.size() < min_num_views)
             continue;
 
         // ransac 三角量测过程
-        /* Accept track if triangulation was successful. */
+        /* Accept track if triangulation was successful. 如果三角测量成功，接受这个tracks*/
         std::vector<std::size_t> outlier;
         math::Vec3d track_pos;
-        if (!triangulator.triangulate(poses, pos, &track_pos, &stats, &outlier))
+        if (!triangulator.triangulate(poses, pos, &track_pos, &stats, &outlier))//outlier储存在相机后面的相机编号
             continue;
         this->tracks->at(i).pos = track_pos;
 
-        /* Check if track contains outliers */
+        /* Check if track contains outliers 检测tracks中是否存在外点*/
         if (outlier.size() == 0)
             continue;
 
-        /* Split outliers from track and generate new track */
-        Track & inlier_track = this->tracks->at(i);
+        /* Split outliers from track and generate new track 从track中分离离群点并生成新的track*/
+        Track &inlier_track = this->tracks->at(i);//获得一条track
         Track outlier_track;
-        outlier_track.invalidate();
-        outlier_track.color = inlier_track.color;
-        for (std::size_t i = 0; i < outlier.size(); ++i){
+        outlier_track.invalidate();//赋值3D点的信息
+        outlier_track.color = inlier_track.color;//将track的颜色信息赋值给outlier_track
+        for (std::size_t i = 0; i < outlier.size(); ++i)
+        {
 
             int const view_id = view_ids[outlier[i]];
             int const feature_id = feature_ids[outlier[i]];
@@ -340,52 +342,49 @@ Incremental::triangulate_new_tracks (int min_num_views)
         this->tracks->push_back(outlier_track);
     }
 
-    if (this->opts.verbose_output){
+    if (this->opts.verbose_output)
+    {
         triangulator.print_statistics(stats, std::cout);
-        std::cout << "  Splitted " << this->tracks->size()
-            - initial_tracks_size << " new tracks." << std::endl;
+        std::cout << "  Splitted " << this->tracks->size() - initial_tracks_size << " new tracks." << std::endl;
     }
 }
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::bundle_adjustment_full (void)
+void Incremental::bundle_adjustment_full(void)
 {
     this->bundle_adjustment_intern(-1);
 }
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::bundle_adjustment_single_cam (int view_id)
+void Incremental::bundle_adjustment_single_cam(int view_id)
 {
-    if (view_id < 0 || std::size_t(view_id) >= this->viewports->size()
-        || !this->viewports->at(view_id).pose.is_valid())
+    if (view_id < 0 || std::size_t(view_id) >= this->viewports->size() || !this->viewports->at(view_id).pose.is_valid())
         throw std::invalid_argument("Invalid view ID");
     this->bundle_adjustment_intern(view_id);
 }
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::bundle_adjustment_points_only (void){
+void Incremental::bundle_adjustment_points_only(void)
+{
     this->bundle_adjustment_intern(-2);
 }
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::bundle_adjustment_intern (int single_camera_ba){
+void Incremental::bundle_adjustment_intern(int single_camera_ba)
+{
     ba::BundleAdjustment::Options ba_opts;
     ba_opts.fixed_intrinsics = this->opts.ba_fixed_intrinsics;
     ba_opts.verbose_output = this->opts.verbose_ba;
     if (single_camera_ba >= 0)
-        ba_opts.bundle_mode = ba::BundleAdjustment::BA_CAMERAS;//  仅仅优化相机
+        ba_opts.bundle_mode = ba::BundleAdjustment::BA_CAMERAS; //  仅仅优化相机
     else if (single_camera_ba == -2)
-        ba_opts.bundle_mode = ba::BundleAdjustment::BA_POINTS;  // 仅仅优化三维点
+        ba_opts.bundle_mode = ba::BundleAdjustment::BA_POINTS; // 仅仅优化三维点
     else if (single_camera_ba == -1)
-        ba_opts.bundle_mode = ba::BundleAdjustment::BA_CAMERAS_AND_POINTS;  // 同时优化相机和三维点
+        ba_opts.bundle_mode = ba::BundleAdjustment::BA_CAMERAS_AND_POINTS; // 同时优化相机和三维点
     else
         throw std::invalid_argument("Invalid BA mode selection");
 
@@ -397,8 +396,8 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
         if (single_camera_ba >= 0 && int(i) != single_camera_ba)
             continue;
 
-        Viewport const& view = this->viewports->at(i);
-        CameraPose const& pose = view.pose;
+        Viewport const &view = this->viewports->at(i);
+        CameraPose const &pose = view.pose;
         if (!pose.is_valid())
             continue;
 
@@ -407,7 +406,7 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
         std::copy(pose.t.begin(), pose.t.end(), cam.translation);
         std::copy(pose.R.begin(), pose.R.end(), cam.rotation);
         std::copy(view.radial_distortion,
-            view.radial_distortion + 2, cam.distortion);
+                  view.radial_distortion + 2, cam.distortion);
         ba_cameras_mapping[i] = ba_cameras.size();
         ba_cameras.push_back(cam);
     }
@@ -418,7 +417,7 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
     std::vector<int> ba_tracks_mapping(this->tracks->size(), -1);
     for (std::size_t i = 0; i < this->tracks->size(); ++i)
     {
-        Track const& track = this->tracks->at(i);
+        Track const &track = this->tracks->at(i);
         if (!track.is_valid())
             continue;
 
@@ -429,7 +428,8 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
         ba_points_3d.push_back(point);
 
         /* Add all observations to BA. */
-        for (std::size_t j = 0; j < track.features.size(); ++j){
+        for (std::size_t j = 0; j < track.features.size(); ++j)
+        {
 
             int const view_id = track.features[j].view_id;
             if (!this->viewports->at(view_id).pose.is_valid())
@@ -438,8 +438,8 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
                 continue;
 
             int const feature_id = track.features[j].feature_id;
-            Viewport const& view = this->viewports->at(view_id);
-            math::Vec2f const& f2d = view.features.positions[feature_id];
+            Viewport const &view = this->viewports->at(view_id);
+            math::Vec2f const &f2d = view.features.positions[feature_id];
 
             ba::Observation point;
             std::copy(f2d.begin(), f2d.end(), point.pos);
@@ -449,9 +449,10 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
         }
     }
 
-    for (std::size_t i = 0; registered && i < this->survey_points->size(); ++i){
+    for (std::size_t i = 0; registered && i < this->survey_points->size(); ++i)
+    {
 
-        SurveyPoint const& survey_point = this->survey_points->at(i);
+        SurveyPoint const &survey_point = this->survey_points->at(i);
 
         /* Add corresponding 3D point to BA. */
         ba::Point3D point;
@@ -462,7 +463,7 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
         /* Add all observations to BA. */
         for (std::size_t j = 0; j < survey_point.observations.size(); ++j)
         {
-            SurveyObservation const& obs = survey_point.observations[j];
+            SurveyObservation const &obs = survey_point.observations[j];
             int const view_id = obs.view_id;
             if (!this->viewports->at(view_id).pose.is_valid())
                 continue;
@@ -492,21 +493,21 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
         if (ba_cameras_mapping[i] == -1)
             continue;
 
-        Viewport& view = this->viewports->at(i);
-        CameraPose& pose = view.pose;
-        ba::Camera const& cam = ba_cameras[ba_cam_counter];
+        Viewport &view = this->viewports->at(i);
+        CameraPose &pose = view.pose;
+        ba::Camera const &cam = ba_cameras[ba_cam_counter];
 
         if (this->opts.verbose_output && !this->opts.ba_fixed_intrinsics)
         {
             std::cout << "Camera " << std::setw(3) << i
-                << ", focal length: "
-                << util::string::get_fixed(pose.get_focal_length(), 5)
-                << " -> "
-                << util::string::get_fixed(cam.focal_length, 5)
-                << ", distortion: "
-                << util::string::get_fixed(cam.distortion[0], 5) << " "
-                << util::string::get_fixed(cam.distortion[1], 5)
-                << std::endl;
+                      << ", focal length: "
+                      << util::string::get_fixed(pose.get_focal_length(), 5)
+                      << " -> "
+                      << util::string::get_fixed(cam.focal_length, 5)
+                      << ", distortion: "
+                      << util::string::get_fixed(cam.distortion[0], 5) << " "
+                      << util::string::get_fixed(cam.distortion[1], 5)
+                      << std::endl;
         }
 
         std::copy(cam.translation, cam.translation + 3, pose.t.begin());
@@ -524,11 +525,11 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
     std::size_t ba_track_counter = 0;
     for (std::size_t i = 0; i < this->tracks->size(); ++i)
     {
-        Track& track = this->tracks->at(i);
+        Track &track = this->tracks->at(i);
         if (!track.is_valid())
             continue;
 
-        ba::Point3D const& point = ba_points_3d[ba_track_counter];
+        ba::Point3D const &point = ba_points_3d[ba_track_counter];
         std::copy(point.pos, point.pos + 3, track.pos.begin());
         ba_track_counter += 1;
     }
@@ -536,35 +537,36 @@ Incremental::bundle_adjustment_intern (int single_camera_ba){
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::invalidate_large_error_tracks (void)
+void Incremental::invalidate_large_error_tracks(void)
 {
     /* Iterate over all tracks and sum reprojection error. */
-    std::vector<std::pair<double, std::size_t> > all_errors;
+    std::vector<std::pair<double, std::size_t>> all_errors;
     std::size_t num_valid_tracks = 0;
-    for (std::size_t i = 0; i < this->tracks->size(); ++i){
+    for (std::size_t i = 0; i < this->tracks->size(); ++i)
+    {
 
         if (!this->tracks->at(i).is_valid())
             continue;
 
         num_valid_tracks += 1;
-        math::Vec3f const& pos3d = this->tracks->at(i).pos;
-        FeatureReferenceList const& ref = this->tracks->at(i).features;
+        math::Vec3f const &pos3d = this->tracks->at(i).pos;
+        FeatureReferenceList const &ref = this->tracks->at(i).features;
 
         double total_error = 0.0f;
         int num_valid = 0;
-        for (std::size_t j = 0; j < ref.size(); ++j){
+        for (std::size_t j = 0; j < ref.size(); ++j)
+        {
 
             /* Get pose and 2D position of feature. */
             int view_id = ref[j].view_id;
             int feature_id = ref[j].feature_id;
 
-            Viewport const& viewport = this->viewports->at(view_id);
-            CameraPose const& pose = viewport.pose;
+            Viewport const &viewport = this->viewports->at(view_id);
+            CameraPose const &pose = viewport.pose;
             if (!pose.is_valid())
                 continue;
 
-            math::Vec2f const& pos2d = viewport.features.positions[feature_id];
+            math::Vec2f const &pos2d = viewport.features.positions[feature_id];
 
             /* Project 3D feature and compute reprojection error. */
             math::Vec3d x = pose.R * pos3d + pose.t;
@@ -588,28 +590,29 @@ Incremental::invalidate_large_error_tracks (void)
 
     /* Delete all tracks with errors above the threshold. */
     int num_deleted_tracks = 0;
-    for (std::size_t i = nth_position; i < all_errors.size(); ++i) {
-        if (all_errors[i].first > square_threshold) {
+    for (std::size_t i = nth_position; i < all_errors.size(); ++i)
+    {
+        if (all_errors[i].first > square_threshold)
+        {
             this->tracks->at(all_errors[i].second).invalidate();
             num_deleted_tracks += 1;
         }
     }
 
-    if (this->opts.verbose_output){
-        float percent = 100.0f * static_cast<float>(num_deleted_tracks)
-            / static_cast<float>(num_valid_tracks);
+    if (this->opts.verbose_output)
+    {
+        float percent = 100.0f * static_cast<float>(num_deleted_tracks) / static_cast<float>(num_valid_tracks);
         std::cout << "Deleted " << num_deleted_tracks
-            << " of " << num_valid_tracks << " tracks ("
-            << util::string::get_fixed(percent, 2)
-            << "%) above a threshold of "
-            << std::sqrt(square_threshold) << "." << std::endl;
+                  << " of " << num_valid_tracks << " tracks ("
+                  << util::string::get_fixed(percent, 2)
+                  << "%) above a threshold of "
+                  << std::sqrt(square_threshold) << "." << std::endl;
     }
 }
 
 /* ---------------------------------------------------------------- */
 // 将三维点和相机坐标系归一化到固定范围内
-void
-Incremental::normalize_scene (void)
+void Incremental::normalize_scene(void)
 {
     this->registered = false;
 
@@ -620,7 +623,7 @@ Incremental::normalize_scene (void)
     int num_valid_cameras = 0;
     for (std::size_t i = 0; i < this->viewports->size(); ++i)
     {
-        CameraPose const& pose = this->viewports->at(i).pose;
+        CameraPose const &pose = this->viewports->at(i).pose;
         if (!pose.is_valid())
             continue;
 
@@ -650,7 +653,7 @@ Incremental::normalize_scene (void)
     /* Transform every camera. */
     for (std::size_t i = 0; i < this->viewports->size(); ++i)
     {
-        CameraPose& pose = this->viewports->at(i).pose;
+        CameraPose &pose = this->viewports->at(i).pose;
         if (!pose.is_valid())
             continue;
         pose.t = pose.t * scale - pose.R * trans * scale;
@@ -659,20 +662,19 @@ Incremental::normalize_scene (void)
 
 /* ---------------------------------------------------------------- */
 
-void
-Incremental::print_registration_error (void) const
+void Incremental::print_registration_error(void) const
 {
     double sum = 0;
     int num_points = 0;
     for (std::size_t i = 0; i < this->survey_points->size(); ++i)
     {
-        SurveyPoint const& survey_point = this->survey_points->at(i);
+        SurveyPoint const &survey_point = this->survey_points->at(i);
 
         std::vector<math::Vec2f> pos;
-        std::vector<CameraPose const*> poses;
+        std::vector<CameraPose const *> poses;
         for (std::size_t j = 0; j < survey_point.observations.size(); ++j)
         {
-            SurveyObservation const& obs = survey_point.observations[j];
+            SurveyObservation const &obs = survey_point.observations[j];
             int const view_id = obs.view_id;
             if (!this->viewports->at(view_id).pose.is_valid())
                 continue;
@@ -693,7 +695,7 @@ Incremental::print_registration_error (void) const
     {
         double mse = sum / num_points;
         std::cout << "Reconstructed " << num_points
-            << " survey points with a MSE of " << mse << std::endl;
+                  << " survey points with a MSE of " << mse << std::endl;
     }
     else
     {
@@ -704,7 +706,7 @@ Incremental::print_registration_error (void) const
 /* ---------------------------------------------------------------- */
 
 core::Bundle::Ptr
-Incremental::create_bundle (void) const
+Incremental::create_bundle(void) const
 {
     if (this->opts.verbose_output && this->registered)
         this->print_registration_error();
@@ -713,13 +715,13 @@ Incremental::create_bundle (void) const
     core::Bundle::Ptr bundle = core::Bundle::create();
     {
         /* Populate the cameras in the bundle. */
-        core::Bundle::Cameras& bundle_cams = bundle->get_cameras();
+        core::Bundle::Cameras &bundle_cams = bundle->get_cameras();
         bundle_cams.resize(this->viewports->size());
         for (std::size_t i = 0; i < this->viewports->size(); ++i)
         {
-            core::CameraInfo& cam = bundle_cams[i];
-            Viewport const& viewport = this->viewports->at(i);
-            CameraPose const& pose = viewport.pose;
+            core::CameraInfo &cam = bundle_cams[i];
+            Viewport const &viewport = this->viewports->at(i);
+            CameraPose const &pose = viewport.pose;
             if (!pose.is_valid())
             {
                 cam.flen = 0.0f;
@@ -731,24 +733,22 @@ Incremental::create_bundle (void) const
             cam.ppoint[1] = pose.K[5] + 0.5f;
             std::copy(pose.R.begin(), pose.R.end(), cam.rot);
             std::copy(pose.t.begin(), pose.t.end(), cam.trans);
-            cam.dist[0] = viewport.radial_distortion[0]
-                * MATH_POW2(pose.get_focal_length());
-            cam.dist[1] = viewport.radial_distortion[1]
-                * MATH_POW2(pose.get_focal_length());
+            cam.dist[0] = viewport.radial_distortion[0] * MATH_POW2(pose.get_focal_length());
+            cam.dist[1] = viewport.radial_distortion[1] * MATH_POW2(pose.get_focal_length());
         }
 
         /* Populate the features in the Bundle. */
-        core::Bundle::Features& bundle_feats = bundle->get_features();
+        core::Bundle::Features &bundle_feats = bundle->get_features();
         bundle_feats.reserve(this->tracks->size());
         for (std::size_t i = 0; i < this->tracks->size(); ++i)
         {
-            Track const& track = this->tracks->at(i);
+            Track const &track = this->tracks->at(i);
             if (!track.is_valid())
                 continue;
 
             /* Copy position and color of the track. */
             bundle_feats.push_back(core::Bundle::Feature3D());
-            core::Bundle::Feature3D& f3d = bundle_feats.back();
+            core::Bundle::Feature3D &f3d = bundle_feats.back();
             std::copy(track.pos.begin(), track.pos.end(), f3d.pos);
             f3d.color[0] = track.color[0] / 255.0f;
             f3d.color[1] = track.color[1] / 255.0f;
@@ -758,14 +758,12 @@ Incremental::create_bundle (void) const
             {
                 /* For each reference copy view ID, feature ID and 2D pos. */
                 f3d.refs.push_back(core::Bundle::Feature2D());
-                core::Bundle::Feature2D& f2d = f3d.refs.back();
+                core::Bundle::Feature2D &f2d = f3d.refs.back();
                 f2d.view_id = track.features[j].view_id;
                 f2d.feature_id = track.features[j].feature_id;
 
-                FeatureSet const& features
-                    = this->viewports->at(f2d.view_id).features;
-                math::Vec2f const& f2d_pos
-                    = features.positions[f2d.feature_id];
+                FeatureSet const &features = this->viewports->at(f2d.view_id).features;
+                math::Vec2f const &f2d_pos = features.positions[f2d.feature_id];
                 std::copy(f2d_pos.begin(), f2d_pos.end(), f2d.pos);
             }
         }

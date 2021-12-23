@@ -51,13 +51,13 @@ triangulate_track (std::vector<math::Vec2f> const& pos,
     if (pos.size() != poses.size() || pos.size() < 2)
         throw std::invalid_argument("Invalid number of positions/poses");
 
-    std::vector<double> A(4 * 2 * poses.size(), 0.0);
+    std::vector<double> A(4 * 2 * poses.size(), 0.0);//矩阵A
     for (std::size_t i = 0; i < poses.size(); ++i)
     {
-        CameraPose const& pose = *poses[i];
-        math::Vec2d p = pos[i];
+        CameraPose const& pose = *poses[i];//获得其中一个相机的K，R，T
+        math::Vec2d p = pos[i];//2D信息
         math::Matrix<double, 3, 4> p_mat;
-        pose.fill_p_matrix(&p_mat);
+        pose.fill_p_matrix(&p_mat);//构造p_mat=K[R T]
 
         for (int j = 0; j < 4; ++j)
         {
@@ -69,11 +69,11 @@ triangulate_track (std::vector<math::Vec2f> const& pos,
     /* Compute SVD. */
     math::Matrix<double, 4, 4> mat_v;
     math::matrix_svd<double>(&A[0], 2 * poses.size(), 4,
-        nullptr, nullptr, mat_v.begin());
+        nullptr, nullptr, mat_v.begin());//SVD分解矩阵A
 
     /* Consider the last column of V and extract 3D point. */
     math::Vector<double, 4> x = mat_v.col(3);
-    return math::Vector<double, 3>(x[0] / x[3], x[1] / x[3], x[2] / x[3]);
+    return math::Vector<double, 3>(x[0] / x[3], x[1] / x[3], x[2] / x[3]);//得到3D点坐标
 }
 
 bool
@@ -83,7 +83,7 @@ is_consistent_pose (Correspondence2D2D const& match,
     math::Vector<double, 3> x = triangulate_match(match, pose1, pose2);
     math::Vector<double, 3> x1 = pose1.R * x + pose1.t;
     math::Vector<double, 3> x2 = pose2.R * x + pose2.t;
-    return x1[2] > 0.0f && x2[2] > 0.0f;
+    return x1[2] > 0.0f && x2[2] > 0.0f;//相机坐标系下的z值大于0，则从E中分解的R，T满足要求
 }
 
 /* --------------- Higher-level triangulation class --------------- */
@@ -108,50 +108,50 @@ Triangulate::triangulate (std::vector<CameraPose const*> const& poses,
             /* Triangulate position from current pair */
             std::vector<CameraPose const*> pose_pair;
             std::vector<math::Vec2f> position_pair;
-            pose_pair.push_back(poses[p1]);
+            pose_pair.push_back(poses[p1]);//K，R，T
             pose_pair.push_back(poses[p2]);
-            position_pair.push_back(positions[p1]);
+            position_pair.push_back(positions[p1]);//2D信息
             position_pair.push_back(positions[p2]);
-            math::Vec3d tmp_pos = triangulate_track(position_pair, pose_pair);
+            math::Vec3d tmp_pos = triangulate_track(position_pair, pose_pair);//输入为K，R，T和2D信息，输出3D点的信息
             if (MATH_ISNAN(tmp_pos[0]) || MATH_ISINF(tmp_pos[0]) ||
                 MATH_ISNAN(tmp_pos[1]) || MATH_ISINF(tmp_pos[1]) ||
                 MATH_ISNAN(tmp_pos[2]) || MATH_ISINF(tmp_pos[2]))
                 continue;
 
-            /* Check if pair has small triangulation angle. */
+            /* Check if pair has small triangulation angle. 检查这个匹配对的三角化角度是否太小*/
             if (this->opts.angle_threshold > 0.0)
             {
                 math::Vec3d camera_pos;
-                pose_pair[0]->fill_camera_pos(&camera_pos);
-                math::Vec3d ray0 = (tmp_pos - camera_pos).normalized();
+                pose_pair[0]->fill_camera_pos(&camera_pos);//获得相机光心在世界坐标系下的坐标，并存储在camera_pos中
+                math::Vec3d ray0 = (tmp_pos - camera_pos).normalized();//获得3D点到相机光心的单位方向向量
                 pose_pair[1]->fill_camera_pos(&camera_pos);
                 math::Vec3d ray1 = (tmp_pos - camera_pos).normalized();
-                double const cos_angle = ray0.dot(ray1);
-                if (cos_angle > this->cos_angle_thres)
+                double const cos_angle = ray0.dot(ray1);//计算两个3D点的夹角
+                if (cos_angle > this->cos_angle_thres)//如果角度大于阈值
                     continue;
             }
 
-            /* Chek error in all input poses and find outliers. */
+            /* Check error in all input poses and find outliers. 检查所有输入的poses的误差，并找到外点*/
             std::vector<std::size_t> tmp_outliers;
             for (std::size_t i = 0; i < poses.size(); ++i)
             {
-                math::Vec3d x = poses[i]->R * tmp_pos + poses[i]->t;
+                math::Vec3d x = poses[i]->R * tmp_pos + poses[i]->t;//相机坐标系：X=R*P+t
 
-                /* Reject track if it appears behind the camera. */
-                if (x[2] <= 0.0)
+                /* Reject track if it appears behind the camera. 如果track出现在相机背后则去除*/
+                if (x[2] <= 0.0)//如果相机坐标系的z值小于0
                 {
-                    tmp_outliers.push_back(i);
+                    tmp_outliers.push_back(i);//记录在相机后的相机编号
                     continue;
                 }
 
-                x = poses[i]->K * x;
-                math::Vec2d x2d(x[0] / x[2], x[1] / x[2]);
-                double error = (positions[i] - x2d).norm();
+                x = poses[i]->K * x;//获得图像坐标系的齐次坐标
+                math::Vec2d x2d(x[0] / x[2], x[1] / x[2]);//获得图像坐标系的绝对坐标
+                double error = (positions[i] - x2d).norm();//计算重投影误差
                 if (error > this->opts.error_threshold)
-                    tmp_outliers.push_back(i);
+                    tmp_outliers.push_back(i);//如果重投影误差大于阈值，则记录该相机的标号
             }
 
-            /* Select triangulation with lowest amount of outliers. */
+            /* Select triangulation with lowest amount of outliers. 选择三角化之后外点最少的*/
             if (tmp_outliers.size() < best_outliers.size())
             {
                 best_pos = tmp_pos;
