@@ -313,7 +313,7 @@ void Incremental::triangulate_new_tracks(int min_num_views)
         /* Accept track if triangulation was successful. 如果三角测量成功，接受这个tracks*/
         std::vector<std::size_t> outlier;
         math::Vec3d track_pos;
-        if (!triangulator.triangulate(poses, pos, &track_pos, &stats, &outlier))
+        if (!triangulator.triangulate(poses, pos, &track_pos, &stats, &outlier))//outlier储存在相机后面的相机编号
             continue;
         this->tracks->at(i).pos = track_pos;
 
