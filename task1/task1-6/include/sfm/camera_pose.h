@@ -74,6 +74,7 @@ CameraPose::init_canonical_form (void)
     this->t.fill(0.0);
 }
 
+//将R，T合并成[R T]
 inline void
 CameraPose::fill_p_matrix (math::Matrix<double, 3, 4>* P) const
 {
@@ -100,7 +101,7 @@ CameraPose::get_focal_length (void) const
 inline void
 CameraPose::fill_camera_pos (math::Vector<double, 3>* camera_pos) const
 {
-    *camera_pos = -this->R.transposed().mult(this->t);
+    *camera_pos = -this->R.transposed().mult(this->t);//相机光心在世界坐标系下的坐标-R^T*T
 }
 
 inline bool
