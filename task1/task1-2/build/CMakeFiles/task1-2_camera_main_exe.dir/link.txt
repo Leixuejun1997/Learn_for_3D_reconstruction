@@ -1,1 +1,0 @@
-/usr/bin/g++    -rdynamic CMakeFiles/task1-2_camera_main_exe.dir/task1-2_test_camera_main.cpp.o CMakeFiles/task1-2_camera_main_exe.dir/src/task1-2_camera.cpp.o  -o task1-2_camera_main_exe 

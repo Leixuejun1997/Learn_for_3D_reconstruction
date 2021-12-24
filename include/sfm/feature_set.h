@@ -66,13 +66,13 @@ public:
 public:
     /** Image dimension used for feature computation. */
     int width, height;
-    /** Per-feature image position. */
+    /** Per-feature image position. 特征点的2D位置信息*/
     std::vector<math::Vec2f> positions;
-    /** Per-feature image color. */
+    /** Per-feature image color. 特征点的3通道颜色信息*/
     std::vector<math::Vec3uc> colors;
-    /** The SIFT descriptors. */
+    /** The SIFT descriptors. sift特征描述子*/
     Sift::Descriptors sift_descriptors;
-    /** The SURF descriptors. */
+    /** The SURF descriptors. surf特征描述子*/
     Surf::Descriptors surf_descriptors;
 
 private:

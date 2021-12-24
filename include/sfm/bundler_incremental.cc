@@ -326,20 +326,20 @@ void Incremental::triangulate_new_tracks(int min_num_views)
         Track outlier_track;
         outlier_track.invalidate();//赋值3D点的信息
         outlier_track.color = inlier_track.color;//将track的颜色信息赋值给outlier_track
-        for (std::size_t i = 0; i < outlier.size(); ++i)
+        for (std::size_t i = 0; i < outlier.size(); ++i)//遍历所有离群点（就是把3D点转换到相机坐标系，在相机后面的那些视角）
         {
 
-            int const view_id = view_ids[outlier[i]];
-            int const feature_id = feature_ids[outlier[i]];
-            /* Remove outlier from inlier track */
+            int const view_id = view_ids[outlier[i]];//获取其中一个离群点视角
+            int const feature_id = feature_ids[outlier[i]];//获得该视角组成的track的特征点的序号
+            /* Remove outlier from inlier track 移除track中的外点*/
             inlier_track.remove_view(view_id);
-            /* Add features to new track */
+            /* Add features to new track 把这个离群点生成一个新的tracks*/
             outlier_track.features.emplace_back(view_id, feature_id);
-            /* Change TrackID in viewports */
+            /* Change TrackID in viewports 改变这个视角的track的ID*/
             this->viewports->at(view_id).track_ids[feature_id] =
-                this->tracks->size();
+                this->tracks->size();//离群点生成的新tracks的ID=总的tracks数量
         }
-        this->tracks->push_back(outlier_track);
+        this->tracks->push_back(outlier_track);//把新生成的track置入trackList中
     }
 
     if (this->opts.verbose_output)
@@ -539,39 +539,39 @@ void Incremental::bundle_adjustment_intern(int single_camera_ba)
 
 void Incremental::invalidate_large_error_tracks(void)
 {
-    /* Iterate over all tracks and sum reprojection error. */
+    /* Iterate over all tracks and sum reprojection error. 迭代所有的tracks并求所有的重投影误差的总和*/
     std::vector<std::pair<double, std::size_t>> all_errors;
-    std::size_t num_valid_tracks = 0;
-    for (std::size_t i = 0; i < this->tracks->size(); ++i)
+    std::size_t num_valid_tracks = 0;//记录无效track的数量
+    for (std::size_t i = 0; i < this->tracks->size(); ++i)//遍历所有的tracks
     {
 
-        if (!this->tracks->at(i).is_valid())
+        if (!this->tracks->at(i).is_valid())//如果track是无效的则跳过，选下一个
             continue;
 
-        num_valid_tracks += 1;
-        math::Vec3f const &pos3d = this->tracks->at(i).pos;
-        FeatureReferenceList const &ref = this->tracks->at(i).features;
+        num_valid_tracks += 1;//记录+1
+        math::Vec3f const &pos3d = this->tracks->at(i).pos;//获得一条track中的3D点信息
+        FeatureReferenceList const &ref = this->tracks->at(i).features;//获得一条track中一个特征（视角ID，组成track的特征点在该视角的ID）
 
-        double total_error = 0.0f;
+        double total_error = 0.0f;//记录总的误差
         int num_valid = 0;
         for (std::size_t j = 0; j < ref.size(); ++j)
         {
 
-            /* Get pose and 2D position of feature. */
-            int view_id = ref[j].view_id;
-            int feature_id = ref[j].feature_id;
+            /* Get pose and 2D position of feature. 获得pose和特征点的2D信息*/
+            int view_id = ref[j].view_id;//视角ID
+            int feature_id = ref[j].feature_id;//组成track的特征点在该视角的ID
 
-            Viewport const &viewport = this->viewports->at(view_id);
-            CameraPose const &pose = viewport.pose;
+            Viewport const &viewport = this->viewports->at(view_id);//获取该视角
+            CameraPose const &pose = viewport.pose;//获取该视角的相机姿态K，R，T
             if (!pose.is_valid())
                 continue;
 
-            math::Vec2f const &pos2d = viewport.features.positions[feature_id];
+            math::Vec2f const &pos2d = viewport.features.positions[feature_id];//获取特征点的2D位置信息
 
-            /* Project 3D feature and compute reprojection error. */
-            math::Vec3d x = pose.R * pos3d + pose.t;
-            math::Vec2d x2d(x[0] / x[2], x[1] / x[2]);
-            double r2 = x2d.square_norm();
+            /* Project 3D feature and compute reprojection error. 投影3D点，来计算重投影误差*/
+            math::Vec3d x = pose.R * pos3d + pose.t;//R*P+T投影到相机坐标系
+            math::Vec2d x2d(x[0] / x[2], x[1] / x[2]);//转换到归一化相机坐标系
+            double r2 = x2d.square_norm();//求和
             x2d *= (1.0 + r2 * (viewport.radial_distortion[0] + viewport.radial_distortion[1] * r2)) * pose.get_focal_length();
             total_error += (pos2d - x2d).square_norm();
             num_valid += 1;

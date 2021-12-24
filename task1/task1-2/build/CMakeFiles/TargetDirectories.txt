@@ -1,3 +1,0 @@
-/home/lei/learn_SFM/task1/build/CMakeFiles/rebuild_cache.dir
-/home/lei/learn_SFM/task1/build/CMakeFiles/edit_cache.dir
-/home/lei/learn_SFM/task1/build/CMakeFiles/task1-2_camera_main_exe.dir

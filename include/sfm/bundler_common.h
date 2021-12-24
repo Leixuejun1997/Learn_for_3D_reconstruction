@@ -37,27 +37,27 @@ struct Viewport
 {
     Viewport (void);
 
-    /** Initial focal length estimate for the image. */
+    /** Initial focal length estimate for the image. 图像的初始焦距估计*/
     float focal_length;
 
-    /** Radial distortion parameter. */
+    /** Radial distortion parameter. 径向畸变参数*/
     float radial_distortion[2];
 
-    /** Camera pose for the viewport. */
+    /** Camera pose for the viewport. 视角的相机姿势K，R，T*/
     CameraPose pose;
 
-    /** The actual image data for debugging purposes. Usually nullptr! */
+    /** The actual image data for debugging purposes. Usually nullptr! 用于调试的实际图像数据。通常nullptr*/
     core::ByteImage::Ptr image;
 
-    /** Per-feature information. */
+    /** Per-feature information. 预特征点信息，是sift还是surf*/
     FeatureSet features;
 
-    /** Per-feature track ID, -1 if not part of a track. */
+    /** Per-feature track ID, -1 if not part of a track. 每个特征点的track ID，如果不是track的一部分，则-1。*/
     std::vector<int> track_ids;
 };
 
 /** The list of all viewports considered for bundling. */
-typedef std::vector<Viewport> ViewportList;
+typedef std::vector<Viewport> ViewportList;//视角信息列表
 
 /* --------------- Data Structure for Feature Tracks -------------- */
 
@@ -66,12 +66,12 @@ struct FeatureReference
 {
     FeatureReference (int view_id, int feature_id);
 
-    int view_id;
-    int feature_id;
+    int view_id;//视角ID
+    int feature_id;//组成track的特征点在该视角的ID
 };
 
 /** The list of all feature references inside a track. */
-typedef std::vector<FeatureReference> FeatureReferenceList;
+typedef std::vector<FeatureReference> FeatureReferenceList;//列表：1、视角ID；2、组成track的特征点在该视角的ID
 
 /** Representation of a feature track. */
 struct Track
@@ -80,9 +80,9 @@ struct Track
     void invalidate (void);
     void remove_view (int view_id);
 
-    math::Vec3f pos;
-    math::Vec3uc color;
-    FeatureReferenceList features;
+    math::Vec3f pos;//3D点信息
+    math::Vec3uc color;//颜色信息
+    FeatureReferenceList features;//列表：1、视角ID；2、组成track的特征点在该视角的ID
 };
 
 /** The list of all tracks. */

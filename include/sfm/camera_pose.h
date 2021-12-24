@@ -33,7 +33,7 @@ SFM_NAMESPACE_BEGIN
  * principal point set to the image center can produce reasonably good
  * results so that bundle adjustment can recover better parameters.
  */
-struct CameraPose
+struct CameraPose//K，R，T
 {
 public:
     CameraPose (void);
