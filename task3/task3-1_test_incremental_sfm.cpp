@@ -271,11 +271,12 @@ int main(int argc, char *argv[])
     // 对当前两个视角进行track重建，并且如果track存在外点，则将每个track的外点剥离成新的track
     incremental.triangulate_new_tracks(2);
 
-    // 根据重投影误差进行筛选
+    // 根据重投影误差进行筛选，删除不符合条件的tracks
     incremental.invalidate_large_error_tracks();
 
-    /* Run bundle adjustment. */
+    /* Run bundle adjustment. 全局BA优化*/
     std::cout << "Running full bundle adjustment..." << std::endl;
+    std::cout<<"进行全局BA优化......"<<std::endl;
     incremental.bundle_adjustment_full();
 
     /* Reconstruct remaining views. */

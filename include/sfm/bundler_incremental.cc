@@ -353,7 +353,7 @@ void Incremental::triangulate_new_tracks(int min_num_views)
 
 void Incremental::bundle_adjustment_full(void)
 {
-    this->bundle_adjustment_intern(-1);
+    this->bundle_adjustment_intern(-1);//同时优化相机和三维点
 }
 
 /* ---------------------------------------------------------------- */
@@ -362,22 +362,22 @@ void Incremental::bundle_adjustment_single_cam(int view_id)
 {
     if (view_id < 0 || std::size_t(view_id) >= this->viewports->size() || !this->viewports->at(view_id).pose.is_valid())
         throw std::invalid_argument("Invalid view ID");
-    this->bundle_adjustment_intern(view_id);
+    this->bundle_adjustment_intern(view_id);//仅仅优化相机
 }
 
 /* ---------------------------------------------------------------- */
 
 void Incremental::bundle_adjustment_points_only(void)
 {
-    this->bundle_adjustment_intern(-2);
+    this->bundle_adjustment_intern(-2);//仅仅优化三维点
 }
 
 /* ---------------------------------------------------------------- */
 
 void Incremental::bundle_adjustment_intern(int single_camera_ba)
 {
-    ba::BundleAdjustment::Options ba_opts;
-    ba_opts.fixed_intrinsics = this->opts.ba_fixed_intrinsics;
+    ba::BundleAdjustment::Options ba_opts;//设置BA参数
+    ba_opts.fixed_intrinsics = this->opts.ba_fixed_intrinsics;//BA优化固定的内参矩阵
     ba_opts.verbose_output = this->opts.verbose_ba;
     if (single_camera_ba >= 0)
         ba_opts.bundle_mode = ba::BundleAdjustment::BA_CAMERAS; //  仅仅优化相机
@@ -388,46 +388,46 @@ void Incremental::bundle_adjustment_intern(int single_camera_ba)
     else
         throw std::invalid_argument("Invalid BA mode selection");
 
-    /* Convert camera to BA data structures. */
-    std::vector<ba::Camera> ba_cameras;
-    std::vector<int> ba_cameras_mapping(this->viewports->size(), -1);
-    for (std::size_t i = 0; i < this->viewports->size(); ++i)
+    /* Convert camera to BA data structures. 转换相机到BA数据结构*/
+    std::vector<ba::Camera> ba_cameras;//存储相机参数的容器
+    std::vector<int> ba_cameras_mapping(this->viewports->size(), -1);//定义一个所有视角数量的容器，全置为-1
+    for (std::size_t i = 0; i < this->viewports->size(); ++i)//遍历所有视角
     {
-        if (single_camera_ba >= 0 && int(i) != single_camera_ba)
+        if (single_camera_ba >= 0 && int(i) != single_camera_ba)//确保优化到指定相机编号的视角
             continue;
 
-        Viewport const &view = this->viewports->at(i);
-        CameraPose const &pose = view.pose;
-        if (!pose.is_valid())
+        Viewport const &view = this->viewports->at(i);//获取该视角
+        CameraPose const &pose = view.pose;//获取该视角相机的K，R，T
+        if (!pose.is_valid())//如果pose无效，则下一个
             continue;
 
         ba::Camera cam;
-        cam.focal_length = pose.get_focal_length();
-        std::copy(pose.t.begin(), pose.t.end(), cam.translation);
-        std::copy(pose.R.begin(), pose.R.end(), cam.rotation);
+        cam.focal_length = pose.get_focal_length();//获取焦距
+        std::copy(pose.t.begin(), pose.t.end(), cam.translation);//获取平移向量T
+        std::copy(pose.R.begin(), pose.R.end(), cam.rotation);//获取旋转矩阵R
         std::copy(view.radial_distortion,
-                  view.radial_distortion + 2, cam.distortion);
-        ba_cameras_mapping[i] = ba_cameras.size();
-        ba_cameras.push_back(cam);
+                  view.radial_distortion + 2, cam.distortion);//获取径向畸变系数
+        ba_cameras_mapping[i] = ba_cameras.size();//存储（相机编号，相机参数在容器ba_cameras的位置）
+        ba_cameras.push_back(cam);//存储相机参数
     }
 
-    /* Convert tracks and observations to BA data structures. */
-    std::vector<ba::Observation> ba_points_2d;
-    std::vector<ba::Point3D> ba_points_3d;
-    std::vector<int> ba_tracks_mapping(this->tracks->size(), -1);
-    for (std::size_t i = 0; i < this->tracks->size(); ++i)
+    /* Convert tracks and observations to BA data structures. 将tracks和观测数据转换为BA数据结构。*/
+    std::vector<ba::Observation> ba_points_2d;//BA数据结构中存储2D点的容器
+    std::vector<ba::Point3D> ba_points_3d;//BA数据结构中存储3D点的容器
+    std::vector<int> ba_tracks_mapping(this->tracks->size(), -1);//定义一个所有track数量的容器，全置为-1
+    for (std::size_t i = 0; i < this->tracks->size(); ++i)//遍历所有的track
     {
-        Track const &track = this->tracks->at(i);
-        if (!track.is_valid())
+        Track const &track = this->tracks->at(i);//获取其中一个track
+        if (!track.is_valid())//如果track无效，则下一个
             continue;
 
-        /* Add corresponding 3D point to BA. */
+        /* Add corresponding 3D point to BA. 在BA中添加相应的3D点*/
         ba::Point3D point;
-        std::copy(track.pos.begin(), track.pos.end(), point.pos);
-        ba_tracks_mapping[i] = ba_points_3d.size();
-        ba_points_3d.push_back(point);
+        std::copy(track.pos.begin(), track.pos.end(), point.pos);//获取3D点坐标
+        ba_tracks_mapping[i] = ba_points_3d.size();//存储（track_ID,track的所有信息在存储内存中的位置）
+        ba_points_3d.push_back(point);//存储3D点
 
-        /* Add all observations to BA. */
+        /* Add all observations to BA. 添加所有的2D点到BA*/
         for (std::size_t j = 0; j < track.features.size(); ++j)
         {
 
@@ -541,7 +541,7 @@ void Incremental::invalidate_large_error_tracks(void)
 {
     /* Iterate over all tracks and sum reprojection error. 迭代所有的tracks并求所有的重投影误差的总和*/
     std::vector<std::pair<double, std::size_t>> all_errors;
-    std::size_t num_valid_tracks = 0;//记录无效track的数量
+    std::size_t num_valid_tracks = 0;//记录有效track的数量
     for (std::size_t i = 0; i < this->tracks->size(); ++i)//遍历所有的tracks
     {
 
@@ -553,7 +553,7 @@ void Incremental::invalidate_large_error_tracks(void)
         FeatureReferenceList const &ref = this->tracks->at(i).features;//获得一条track中一个特征（视角ID，组成track的特征点在该视角的ID）
 
         double total_error = 0.0f;//记录总的误差
-        int num_valid = 0;
+        int num_valid = 0;//记录有效点的个数
         for (std::size_t j = 0; j < ref.size(); ++j)
         {
 
@@ -571,42 +571,46 @@ void Incremental::invalidate_large_error_tracks(void)
             /* Project 3D feature and compute reprojection error. 投影3D点，来计算重投影误差*/
             math::Vec3d x = pose.R * pos3d + pose.t;//R*P+T投影到相机坐标系
             math::Vec2d x2d(x[0] / x[2], x[1] / x[2]);//转换到归一化相机坐标系
-            double r2 = x2d.square_norm();//求和
-            x2d *= (1.0 + r2 * (viewport.radial_distortion[0] + viewport.radial_distortion[1] * r2)) * pose.get_focal_length();
-            total_error += (pos2d - x2d).square_norm();
-            num_valid += 1;
+            double r2 = x2d.square_norm();//x^2+y^2
+            x2d *= (1.0 + r2 * (viewport.radial_distortion[0] + viewport.radial_distortion[1] * r2)) * pose.get_focal_length();//进行径向畸变
+            total_error += (pos2d - x2d).square_norm();//计算总的重投影误差
+            num_valid += 1;//有效点个数+1
         }
-        total_error /= static_cast<double>(num_valid);
-        all_errors.push_back(std::pair<double, int>(total_error, i));
+        total_error /= static_cast<double>(num_valid);//平均重投影误差（也就是一条track的重投影误差）
+        all_errors.push_back(std::pair<double, int>(total_error, i));//存储重投影误差+track_ID 
     }
 
-    if (num_valid_tracks < 2)
+    if (num_valid_tracks < 2)//如果有效track数量小于2，直接跳出函数
         return;
 
     /* Find the 1/2 percentile. */
     std::size_t const nth_position = all_errors.size() / 2;
-    std::nth_element(all_errors.begin(), all_errors.begin() + nth_position, all_errors.end());
+    std::nth_element(all_errors.begin(), all_errors.begin() + nth_position, all_errors.end());//获得所有track的重投影误差的中位数
     double const square_threshold = all_errors[nth_position].first * this->opts.track_error_threshold_factor;
-
+//平方阈值=重投影误差中位数*大误差track的阈值(中值误差因子)
     /* Delete all tracks with errors above the threshold. */
     int num_deleted_tracks = 0;
+    //如果大于重投影误差中位数的track的重投影误差还大于设定的阈值square_threshold，则该track就要置为无效
     for (std::size_t i = nth_position; i < all_errors.size(); ++i)
     {
         if (all_errors[i].first > square_threshold)
         {
             this->tracks->at(all_errors[i].second).invalidate();
-            num_deleted_tracks += 1;
+            num_deleted_tracks += 1;//删除的track+1
         }
     }
 
     if (this->opts.verbose_output)
     {
-        float percent = 100.0f * static_cast<float>(num_deleted_tracks) / static_cast<float>(num_valid_tracks);
+        float percent = 100.0f * static_cast<float>(num_deleted_tracks) / static_cast<float>(num_valid_tracks);//删除的track占所有有效track的百分比
         std::cout << "Deleted " << num_deleted_tracks
                   << " of " << num_valid_tracks << " tracks ("
                   << util::string::get_fixed(percent, 2)
                   << "%) above a threshold of "
                   << std::sqrt(square_threshold) << "." << std::endl;
+                  std::cout<<"在阈值 "<<std::sqrt(square_threshold)<<"的约束下删除了 "<<num_valid_tracks<<" 有效tracks中的 "
+                  <<num_deleted_tracks<<" 条无效tracks，无效tracks的占比为： "<<util::string::get_fixed(percent, 2)
+                  <<" %!"<<std::endl;
     }
 }
 

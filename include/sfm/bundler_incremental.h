@@ -31,21 +31,21 @@ public:
     {
         Options (void);
 
-        /** Options for computing pose from 2D-3D correspondences. */
+        /** Options for computing pose from 2D-3D correspondences. 从2D-3D对应点计算pos的选项*/
         RansacPoseP3P::Options pose_p3p_opts;
-        /** Threshold (factor of the median error) for large error tracks. */
+        /** Threshold (factor of the median error) for large error tracks. 大误差track的阈值(中值误差因子)*/
         double track_error_threshold_factor;
-        /** Reprojection error threshold for newly triangulated tracks. */
+        /** Reprojection error threshold for newly triangulated tracks. 新三角化track的重投影误差阈值*/
         double new_track_error_threshold;
-        /** Minimum angle for track triangulation in RAD. */
+        /** Minimum angle for track triangulation in RAD. RAD中track三角测量的最小角度*/
         double min_triangulation_angle;
-        /** Bundle Adjustment fixed intrinsics. */
+        /** Bundle Adjustment fixed intrinsics. BA优化固定的内参矩阵*/
         bool ba_fixed_intrinsics;
-        /** Bundle Adjustment with shared intrinsics. */
+        /** Bundle Adjustment with shared intrinsics. BA优化可共享的内参矩阵*/
         bool ba_shared_intrinsics;
-        /** Produce status messages on the console. */
+        /** Produce status messages on the console. 在控制台上生成状态消息*/
         bool verbose_output;
-        /** Produce detailed BA messages on the console. */
+        /** Produce detailed BA messages on the console. 在控制台上生成详细的BA消息*/
         bool verbose_ba;
     };
 

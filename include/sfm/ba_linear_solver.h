@@ -26,9 +26,9 @@ public:
     {
         Options (void);
 
-        double trust_region_radius;
-        int cg_max_iterations;
-        int camera_block_dim;
+        double trust_region_radius;//置信半径大小，默认为1
+        int cg_max_iterations;//共轭梯度法求解delta_x,delta_y的迭代次数，默认1000
+        int camera_block_dim;//相机块的维度
     };
 
     struct Status
