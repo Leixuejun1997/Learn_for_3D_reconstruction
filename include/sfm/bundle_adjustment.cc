@@ -238,7 +238,7 @@ void BundleAdjustment::compute_reprojection_errors(DenseVectorType *vector_f,
 
             if (this->opts.bundle_mode & BA_CAMERAS)//如果只是优化相机，则只更新相机的参数
             {
-                this->update_camera(cam, delta_x->data() + cam_id, &new_camera);
+                this->update_camera(cam, delta_x->data() + cam_id, &new_camera);//根据优化的不同情况，更新相机参数，其中包括：焦距，径向畸变系数，R，T共9个参数
                 flen = &new_camera.focal_length;
                 dist = new_camera.distortion;
                 rot = new_camera.rotation;
@@ -710,7 +710,7 @@ void BundleAdjustment::update_camera(Camera const &cam,
     std::copy(cam.rotation, cam.rotation + 9, rot_orig);
     double rot_update[9];//定义数组储存旋转矩阵的变化量
     this->rodrigues_to_matrix(update + 3 + offset, rot_update);//将角轴法转化成旋转矩阵;update + 3 + offset：指向delta_R矩阵的第一个元素
-    math::matrix_multiply(rot_update, 3, 3, rot_orig, 3, out->rotation);
+    math::matrix_multiply(rot_update, 3, 3, rot_orig, 3, out->rotation);//将旋转矩阵的增量加上
 }
 
 void BundleAdjustment::update_point(Point3D const &pt,
