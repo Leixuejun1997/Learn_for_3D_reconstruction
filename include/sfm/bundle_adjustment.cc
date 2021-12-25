@@ -291,13 +291,13 @@ void BundleAdjustment::radial_distort(double *x, double *y, double const *dist)
     *y *= factor;
 }
 
-void BundleAdjustment::rodrigues_to_matrix(double const *r, double *m)
+void BundleAdjustment::rodrigues_to_matrix(double const *r, double *m)//将角轴法转化成旋转矩阵
 {
     /* Obtain angle from vector length. 从向量长度获取角度*/
-    double a = std::sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
-    /* Precompute sine and cosine terms. */
-    double ct = (a == 0.0) ? 0.5f : (1.0f - std::cos(a)) / (2.0 * a);
-    double st = (a == 0.0) ? 1.0 : std::sin(a) / a;
+    double a = std::sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);//w0^2+w1^2+w2^2，角轴的三个分量的平方和
+    /* Precompute sine and cosine terms. 预先计算正弦和余弦项*/
+    double ct = (a == 0.0) ? 0.5f : (1.0f - std::cos(a)) / (a * a);//(1-cos||w||)/2||w||
+    double st = (a == 0.0) ? 1.0 : std::sin(a) / a;//sin||w||/||w||
     /* R = I + st * K + ct * K^2 (with cross product matrix K). */
     m[0] = 1.0 - (r[1] * r[1] + r[2] * r[2]) * ct;
     m[1] = r[0] * r[1] * ct - r[2] * st;
@@ -709,7 +709,7 @@ void BundleAdjustment::update_camera(Camera const &cam,
     double rot_orig[9];//定义数组储存旋转矩阵R
     std::copy(cam.rotation, cam.rotation + 9, rot_orig);
     double rot_update[9];//定义数组储存旋转矩阵的变化量
-    this->rodrigues_to_matrix(update + 3 + offset, rot_update);
+    this->rodrigues_to_matrix(update + 3 + offset, rot_update);//将角轴法转化成旋转矩阵;update + 3 + offset：指向delta_R矩阵的第一个元素
     math::matrix_multiply(rot_update, 3, 3, rot_orig, 3, out->rotation);
 }
 
