@@ -407,7 +407,7 @@ void Incremental::bundle_adjustment_intern(int single_camera_ba)
         std::copy(pose.R.begin(), pose.R.end(), cam.rotation);//获取旋转矩阵R
         std::copy(view.radial_distortion,
                   view.radial_distortion + 2, cam.distortion);//获取径向畸变系数
-        ba_cameras_mapping[i] = ba_cameras.size();//存储（相机编号，相机参数在容器ba_cameras的位置）
+        ba_cameras_mapping[i] = ba_cameras.size();//存储（视角编号，BA中相机编号）
         ba_cameras.push_back(cam);//存储相机参数
     }
 
@@ -424,22 +424,22 @@ void Incremental::bundle_adjustment_intern(int single_camera_ba)
         /* Add corresponding 3D point to BA. 在BA中添加相应的3D点*/
         ba::Point3D point;
         std::copy(track.pos.begin(), track.pos.end(), point.pos);//获取3D点坐标
-        ba_tracks_mapping[i] = ba_points_3d.size();//存储（track_ID,track的所有信息在存储内存中的位置）
+        ba_tracks_mapping[i] = ba_points_3d.size();//存储（track_ID,3D点的序号）
         ba_points_3d.push_back(point);//存储3D点
 
         /* Add all observations to BA. 添加所有的2D点到BA*/
-        for (std::size_t j = 0; j < track.features.size(); ++j)
+        for (std::size_t j = 0; j < track.features.size(); ++j)//遍历一条track中的所有特征点
         {
 
-            int const view_id = track.features[j].view_id;
-            if (!this->viewports->at(view_id).pose.is_valid())
+            int const view_id = track.features[j].view_id;//获取其中一个特征点的视角ID
+            if (!this->viewports->at(view_id).pose.is_valid())//若视角无效则下一个
                 continue;
             if (single_camera_ba >= 0 && view_id != single_camera_ba)
                 continue;
 
-            int const feature_id = track.features[j].feature_id;
-            Viewport const &view = this->viewports->at(view_id);
-            math::Vec2f const &f2d = view.features.positions[feature_id];
+            int const feature_id = track.features[j].feature_id;//获取一条track中一个特征点的
+            Viewport const &view = this->viewports->at(view_id);//获取视角信息
+            math::Vec2f const &f2d = view.features.positions[feature_id];//获取特征点的2D位置信息
 
             ba::Observation point;
             std::copy(f2d.begin(), f2d.end(), point.pos);
@@ -449,41 +449,41 @@ void Incremental::bundle_adjustment_intern(int single_camera_ba)
         }
     }
 
-    for (std::size_t i = 0; registered && i < this->survey_points->size(); ++i)
+    for (std::size_t i = 0; registered && i < this->survey_points->size(); ++i)//遍历所有3D观测点（3D点pos+所有2D点信息）
     {
 
-        SurveyPoint const &survey_point = this->survey_points->at(i);
+        SurveyPoint const &survey_point = this->survey_points->at(i);//获取其中一个3D点信息
 
-        /* Add corresponding 3D point to BA. */
-        ba::Point3D point;
-        std::copy(survey_point.pos.begin(), survey_point.pos.end(), point.pos);
+        /* Add corresponding 3D point to BA. 将3D点信息添加到BA优化中*/
+        ba::Point3D point;//定义一个BA的3D点
+        std::copy(survey_point.pos.begin(), survey_point.pos.end(), point.pos);//赋值给BA3D点信息
         point.is_constant = true;
         ba_points_3d.push_back(point);
 
         /* Add all observations to BA. */
-        for (std::size_t j = 0; j < survey_point.observations.size(); ++j)
+        for (std::size_t j = 0; j < survey_point.observations.size(); ++j)//遍历一个3D点所有的2D特征点
         {
-            SurveyObservation const &obs = survey_point.observations[j];
-            int const view_id = obs.view_id;
+            SurveyObservation const &obs = survey_point.observations[j];//获取其中一个2D信息
+            int const view_id = obs.view_id;//获取视角ID
             if (!this->viewports->at(view_id).pose.is_valid())
                 continue;
             if (single_camera_ba >= 0 && view_id != single_camera_ba)
                 continue;
 
-            ba::Observation point;
-            std::copy(obs.pos.begin(), obs.pos.end(), point.pos);
+            ba::Observation point;//定义BA形式的2D点
+            std::copy(obs.pos.begin(), obs.pos.end(), point.pos);//赋值给BA形式的2D点
             point.camera_id = ba_cameras_mapping[view_id];
             point.point_id = ba_points_3d.size() - 1;
             ba_points_2d.push_back(point);
         }
     }
 
-    /* Run bundle adjustment. */
-    ba::BundleAdjustment ba(ba_opts);
-    ba.set_cameras(&ba_cameras);
-    ba.set_points(&ba_points_3d);
-    ba.set_observations(&ba_points_2d);
-    ba.optimize();
+    /* Run bundle adjustment. 开始进行BA优化*/
+    ba::BundleAdjustment ba(ba_opts);//BA参数赋值
+    ba.set_cameras(&ba_cameras);//所有相机参数
+    ba.set_points(&ba_points_3d);//所有3D点信息
+    ba.set_observations(&ba_points_2d);//所有的2D信息
+    ba.optimize();//开始优化
     ba.print_status();
 
     /* Transfer cameras back to SfM data structures. */

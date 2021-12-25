@@ -98,8 +98,8 @@ public:
     void print_status(bool detailed = false) const;
 
 private:
-    typedef SparseMatrix<double> SparseMatrixType;
-    typedef DenseVector<double> DenseVectorType;
+    typedef SparseMatrix<double> SparseMatrixType;//稀疏矩阵
+    typedef DenseVector<double> DenseVectorType;//稠密矩阵
 
 private:
     void sanity_checks(void);

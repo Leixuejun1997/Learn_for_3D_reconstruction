@@ -20,7 +20,7 @@ SFM_NAMESPACE_BEGIN
 SFM_BA_NAMESPACE_BEGIN
 
 template <typename T>
-class DenseVector
+class DenseVector//稠密向量
 {
 public:
     DenseVector (void) = default;

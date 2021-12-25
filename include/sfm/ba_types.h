@@ -32,7 +32,7 @@ struct Observation
 {
     double pos[2];//2D点坐标
     int camera_id;//相机编号
-    int point_id;//2D点编号
+    int point_id;//3D点编号
 };
 
 /* ------------------------ Implementation ------------------------ */

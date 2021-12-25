@@ -30,65 +30,60 @@ SFM_NAMESPACE_BEGIN
 SFM_BA_NAMESPACE_BEGIN
 
 BundleAdjustment::Status
-BundleAdjustment::optimize (void)
+BundleAdjustment::optimize(void)
 {
-    util::WallTimer timer;
-    this->sanity_checks();
+    util::WallTimer timer; //计时器
+    this->sanity_checks(); //参数检查
     this->status = Status();
-    this->lm_optimize();
+    this->lm_optimize(); // lm优化
     this->status.runtime_ms = timer.get_elapsed();
     return this->status;
 }
 
-void
-BundleAdjustment::sanity_checks (void)
+void BundleAdjustment::sanity_checks(void)
 {
-    /* Check for null arguments. */
-    if (this->cameras == nullptr)
+    /* Check for null arguments. 检查空参数*/
+    if (this->cameras == nullptr) //检查相机参数是否为空
         throw std::invalid_argument("No cameras given");
-    if (this->points == nullptr)
+    if (this->points == nullptr) //检查track中的3D点信息是否为空
         throw std::invalid_argument("No tracks given");
-    if (this->observations == nullptr)
+    if (this->observations == nullptr) //检查2D点信息是否为空
         throw std::invalid_argument("No observations given");
 
-    /* Check for valid focal lengths. */
-    for (std::size_t i = 0; i < this->cameras->size(); ++i)
-        if (this->cameras->at(i).focal_length <= 0.0)
+    /* Check for valid focal lengths. 检查相机焦距*/
+    for (std::size_t i = 0; i < this->cameras->size(); ++i) //遍历所有相机
+        if (this->cameras->at(i).focal_length <= 0.0)       //如果焦距小于0
             throw std::invalid_argument("Camera with invalid focal length");
 
-    /* Check for valid IDs in the observations. */
-    for (std::size_t i = 0; i < this->observations->size(); ++i)
+    /* Check for valid IDs in the observations. 检查2D点的ID*/
+    for (std::size_t i = 0; i < this->observations->size(); ++i) //遍历所有2D点
     {
-        Observation const& obs = this->observations->at(i);
-        if (obs.camera_id < 0
-            || obs.camera_id >= static_cast<int>(this->cameras->size()))
+        Observation const &obs = this->observations->at(i);
+        if (obs.camera_id < 0 || obs.camera_id >= static_cast<int>(this->cameras->size())) //如果相机编号小于0或者大于所有相机的数量
             throw std::invalid_argument("Observation with invalid camera ID");
-        if (obs.point_id < 0
-            || obs.point_id >= static_cast<int>(this->points->size()))
+        if (obs.point_id < 0 || obs.point_id >= static_cast<int>(this->points->size())) //如果2D点编号小于0或者大于所有2D点的数量
             throw std::invalid_argument("Observation with invalid track ID");
     }
 }
 
-void
-BundleAdjustment::lm_optimize (void)
+void BundleAdjustment::lm_optimize(void)
 {
-    /* Setup linear solver. */
-    LinearSolver::Options pcg_opts;
-    pcg_opts = this->opts.linear_opts;
-    pcg_opts.trust_region_radius = TRUST_REGION_RADIUS_INIT;//1000
+    /* Setup linear solver. 设置线性求解器*/
+    LinearSolver::Options pcg_opts;                          //设置参数
+    pcg_opts = this->opts.linear_opts;                       //共轭梯度法求解delta_x,delta_y的参数设置
+    pcg_opts.trust_region_radius = TRUST_REGION_RADIUS_INIT; //置信半径，1000
 
     /* Compute reprojection error for the first time. */
-    DenseVectorType F, F_new;
-    this->compute_reprojection_errors(&F);// todo F 是误差向量
-    double current_mse = this->compute_mse(F);// 计算算残差值
+    DenseVectorType F, F_new;                  //定义两个稠密矩阵
+    this->compute_reprojection_errors(&F);     // 计算重投影误差并储存在F中  todo F 是误差向量
+    double current_mse = this->compute_mse(F); // 计算算残差值
     this->status.initial_mse = current_mse;
     this->status.final_mse = current_mse;
 
     /* Levenberg-Marquard main loop. */
-    for (int lm_iter = 0; ; ++lm_iter)
+    for (int lm_iter = 0;; ++lm_iter)
     {
-        if (lm_iter + 1 > this->opts.lm_min_iterations
-            && (current_mse < this->opts.lm_mse_threshold))
+        if (lm_iter + 1 > this->opts.lm_min_iterations && (current_mse < this->opts.lm_mse_threshold))
         {
             LOG_V << "BA: Satisfied MSE threshold." << std::endl;
             break;
@@ -98,20 +93,20 @@ BundleAdjustment::lm_optimize (void)
         SparseMatrixType Jc, Jp;
         switch (this->opts.bundle_mode)
         {
-            /*同时优化相机和三维点*/
-            case BA_CAMERAS_AND_POINTS:
-                this->analytic_jacobian(&Jc, &Jp);
-                break;
-            /*固定三维点，只优化相机参数*/
-            case BA_CAMERAS:
-                this->analytic_jacobian(&Jc, nullptr);
-                break;
-            /*固定相机优化三维点的坐标*/
-            case BA_POINTS:
-                this->analytic_jacobian(nullptr, &Jp);
-                break;
-            default:
-                throw std::runtime_error("Invalid bundle mode");
+        /*同时优化相机和三维点*/
+        case BA_CAMERAS_AND_POINTS:
+            this->analytic_jacobian(&Jc, &Jp);
+            break;
+        /*固定三维点，只优化相机参数*/
+        case BA_CAMERAS:
+            this->analytic_jacobian(&Jc, nullptr);
+            break;
+        /*固定相机优化三维点的坐标*/
+        case BA_POINTS:
+            this->analytic_jacobian(nullptr, &Jp);
+            break;
+        default:
+            throw std::runtime_error("Invalid bundle mode");
         }
 
         /* Perform linear step. */
@@ -149,13 +144,13 @@ BundleAdjustment::lm_optimize (void)
         if (successful_iteration)
         {
             LOG_V << "BA: #" << std::setw(2) << std::left << lm_iter
-                << " success" << std::right
-                << ", MSE " << std::setw(11) << current_mse
-                << " -> " << std::setw(11) << new_mse
-                << ", CG " << std::setw(3) << cg_status.num_cg_iterations
-                << ", TRR " << pcg_opts.trust_region_radius
-                << ", MSE Ratio: "<<delta_mse_ratio
-                << std::endl;
+                  << " success" << std::right
+                  << ", MSE " << std::setw(11) << current_mse
+                  << " -> " << std::setw(11) << new_mse
+                  << ", CG " << std::setw(3) << cg_status.num_cg_iterations
+                  << ", TRR " << pcg_opts.trust_region_radius
+                  << ", MSE Ratio: " << delta_mse_ratio
+                  << std::endl;
 
             this->status.num_lm_iterations += 1;
             this->status.num_lm_successful_iterations += 1;
@@ -168,21 +163,20 @@ BundleAdjustment::lm_optimize (void)
 
             // todo trust region 是用来做什么的？
             /* Compute trust region update. FIXME delta_norm or mse? */
-            double const gain_ratio = delta_mse * (F.size() / 2)
-                / cg_status.predicted_error_decrease;
+            double const gain_ratio = delta_mse * (F.size() / 2) / cg_status.predicted_error_decrease;
             double const trust_region_update = 1.0 / std::max(1.0 / 3.0,
-                (1.0 - MATH_POW3(2.0 * gain_ratio - 1.0)));
+                                                              (1.0 - MATH_POW3(2.0 * gain_ratio - 1.0)));
             pcg_opts.trust_region_radius *= trust_region_update;
         }
         else
         {
             LOG_V << "BA: #" << std::setw(2) << std::left << lm_iter
-                << " failure" << std::right
-                << ", MSE " << std::setw(11) << current_mse
-                << ",    " << std::setw(11) << " "
-                << " CG " << std::setw(3) << cg_status.num_cg_iterations
-                << ", TRR " << pcg_opts.trust_region_radius
-                << std::endl;
+                  << " failure" << std::right
+                  << ", MSE " << std::setw(11) << current_mse
+                  << ",    " << std::setw(11) << " "
+                  << " CG " << std::setw(3) << cg_status.num_cg_iterations
+                  << ", TRR " << pcg_opts.trust_region_radius
+                  << std::endl;
 
             this->status.num_lm_iterations += 1;
             this->status.num_lm_unsuccessful_iterations += 1;
@@ -195,7 +189,7 @@ BundleAdjustment::lm_optimize (void)
         if (lm_iter + 1 >= this->opts.lm_max_iterations)
         {
             LOG_V << "BA: Reached maximum LM iterations of "
-                << this->opts.lm_max_iterations << std::endl;
+                  << this->opts.lm_max_iterations << std::endl;
             break;
         }
 
@@ -205,7 +199,7 @@ BundleAdjustment::lm_optimize (void)
             if (delta_mse_ratio < this->opts.lm_delta_threshold)
             {
                 LOG_V << "BA: Satisfied delta mse ratio threshold of "
-                    << this->opts.lm_delta_threshold << std::endl;
+                      << this->opts.lm_delta_threshold << std::endl;
                 break;
             }
         }
@@ -214,36 +208,35 @@ BundleAdjustment::lm_optimize (void)
     this->status.final_mse = current_mse;
 }
 
-void
-BundleAdjustment::compute_reprojection_errors (DenseVectorType* vector_f,
-    DenseVectorType const* delta_x)
+void BundleAdjustment::compute_reprojection_errors(DenseVectorType *vector_f,
+                                                   DenseVectorType const *delta_x)//计算重投影误差
 {
-    if (vector_f->size() != this->observations->size() * 2)
-        vector_f->resize(this->observations->size() * 2);
+    if (vector_f->size() != this->observations->size() * 2) //若稠密矩阵的尺寸！=观测的两倍
+        vector_f->resize(this->observations->size() * 2);   // observations存储2D-3D，以及相机标号信息的列表
 
 #pragma omp parallel for
-    for (std::size_t i = 0; i < this->observations->size(); ++i)
+    for (std::size_t i = 0; i < this->observations->size(); ++i) //遍历所有观测点
     {
-        Observation const& obs = this->observations->at(i);
-        Point3D const& p3d = this->points->at(obs.point_id);
-        Camera const& cam = this->cameras->at(obs.camera_id);
+        Observation const &obs = this->observations->at(i);   //获取其中一观测点
+        Point3D const &p3d = this->points->at(obs.point_id);  //获取3D点
+        Camera const &cam = this->cameras->at(obs.camera_id); //获取相机
 
-        double const* flen = &cam.focal_length; // 相机焦距
-        double const* dist = cam.distortion;    // 径向畸变系数
-        double const* rot = cam.rotation;       // 相机旋转矩阵
-        double const* trans = cam.translation;  // 相机平移向量
-        double const* point = p3d.pos;          // 三维点坐标
+        double const *flen = &cam.focal_length; // 相机焦距
+        double const *dist = cam.distortion;    // 径向畸变系数
+        double const *rot = cam.rotation;       // 相机旋转矩阵
+        double const *trans = cam.translation;  // 相机平移向量
+        double const *point = p3d.pos;          // 三维点坐标
 
-        Point3D new_point;
-        Camera new_camera;
+        Point3D new_point;//定义一个BA优化的3D点坐标
+        Camera new_camera;//定义一个BA优化的相机类型
 
         // 如果delta_x 不为空，则先利用delta_x对相机和结构进行更新，然后再计算重投影误差
         if (delta_x != nullptr)
         {
-            std::size_t cam_id = obs.camera_id * this->num_cam_params;
-            std::size_t pt_id = obs.point_id * 3;
+            std::size_t cam_id = obs.camera_id * this->num_cam_params;//相机编号*相机变量的个数
+            std::size_t pt_id = obs.point_id * 3;//3D点编号*3
 
-            if (this->opts.bundle_mode & BA_CAMERAS)
+            if (this->opts.bundle_mode & BA_CAMERAS)//如果只是优化相机，则只更新相机的参数
             {
                 this->update_camera(cam, delta_x->data() + cam_id, &new_camera);
                 flen = &new_camera.focal_length;
@@ -253,15 +246,15 @@ BundleAdjustment::compute_reprojection_errors (DenseVectorType* vector_f,
                 pt_id += this->cameras->size() * this->num_cam_params;
             }
 
-            if (this->opts.bundle_mode & BA_POINTS)
+            if (this->opts.bundle_mode & BA_POINTS)//如果只优化3D点，则只更新3D点的参数
             {
                 this->update_point(p3d, delta_x->data() + pt_id, &new_point);
                 point = new_point.pos;
             }
         }
 
-        /* Project point onto image plane. */
-        double rp[] = { 0.0, 0.0, 0.0 };
+        /* Project point onto image plane. 将3D点投影到图像平面*/
+        double rp[] = {0.0, 0.0, 0.0};
         for (int d = 0; d < 3; ++d)
         {
             rp[0] += rot[0 + d] * point[d];
@@ -282,7 +275,7 @@ BundleAdjustment::compute_reprojection_errors (DenseVectorType* vector_f,
 }
 
 double
-BundleAdjustment::compute_mse (DenseVectorType const& vector_f)
+BundleAdjustment::compute_mse(DenseVectorType const &vector_f)
 {
     double mse = 0.0;
     for (std::size_t i = 0; i < vector_f.size(); ++i)
@@ -290,8 +283,7 @@ BundleAdjustment::compute_mse (DenseVectorType const& vector_f)
     return mse / static_cast<double>(vector_f.size() / 2);
 }
 
-void
-BundleAdjustment::radial_distort (double* x, double* y, double const* dist)
+void BundleAdjustment::radial_distort(double *x, double *y, double const *dist)
 {
     double const radius2 = *x * *x + *y * *y;
     double const factor = 1.0 + radius2 * (dist[0] + dist[1] * radius2);
@@ -299,10 +291,9 @@ BundleAdjustment::radial_distort (double* x, double* y, double const* dist)
     *y *= factor;
 }
 
-void
-BundleAdjustment::rodrigues_to_matrix (double const* r, double* m)
+void BundleAdjustment::rodrigues_to_matrix(double const *r, double *m)
 {
-    /* Obtain angle from vector length. */
+    /* Obtain angle from vector length. 从向量长度获取角度*/
     double a = std::sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
     /* Precompute sine and cosine terms. */
     double ct = (a == 0.0) ? 0.5f : (1.0f - std::cos(a)) / (2.0 * a);
@@ -319,9 +310,8 @@ BundleAdjustment::rodrigues_to_matrix (double const* r, double* m)
     m[8] = 1.0 - (r[0] * r[0] + r[1] * r[1]) * ct;
 }
 
-void
-BundleAdjustment::analytic_jacobian (SparseMatrixType* jac_cam,
-    SparseMatrixType* jac_points)
+void BundleAdjustment::analytic_jacobian(SparseMatrixType *jac_cam,
+                                         SparseMatrixType *jac_points)
 {
     // 相机和三维点jacobian矩阵的行数都是n_observations*2
     // 相机jacobian矩阵jac_cam的列数是n_cameras* n_cam_params
@@ -339,9 +329,9 @@ BundleAdjustment::analytic_jacobian (SparseMatrixType* jac_cam,
     if (jac_points != nullptr)
         point_triplets.reserve(this->observations->size() * 3 * 2);
 
-    /*jac_cam的尺寸大小是 n_observations  x 2*n_cam_params--每一个观察点对应一个相机
-     *jac_points的尺寸是 n_observations   x  2*3 --每一个观察点对应一个三维点
-     */
+        /*jac_cam的尺寸大小是 n_observations  x 2*n_cam_params--每一个观察点对应一个相机
+         *jac_points的尺寸是 n_observations   x  2*3 --每一个观察点对应一个三维点
+         */
 
 #pragma omp parallel
     {
@@ -349,21 +339,23 @@ BundleAdjustment::analytic_jacobian (SparseMatrixType* jac_cam,
 #pragma omp for
 
         // 对于每一个观察到的二维点
-        for (std::size_t i = 0; i < this->observations->size(); ++i) {
+        for (std::size_t i = 0; i < this->observations->size(); ++i)
+        {
 
             // 获取二维点，obs.point_id 三维点的索引，obs.camera_id 相机的索引
-            Observation const& obs = this->observations->at(i);
+            Observation const &obs = this->observations->at(i);
             // 三维点坐标
-            Point3D const& p3d = this->points->at(obs.point_id);
+            Point3D const &p3d = this->points->at(obs.point_id);
             // 相机参数
-            Camera const& cam = this->cameras->at(obs.camera_id);
+            Camera const &cam = this->cameras->at(obs.camera_id);
 
             /*对一个三维点和相机求解偏导数*/
             this->analytic_jacobian_entries(cam, p3d,
-                cam_x_ptr, cam_y_ptr, point_x_ptr, point_y_ptr);
+                                            cam_x_ptr, cam_y_ptr, point_x_ptr, point_y_ptr);
 
             /*如果三维点是固定的，即只优化相机参数，则将三维点的偏导数设置为0*/
-            if (p3d.is_constant) {
+            if (p3d.is_constant)
+            {
                 std::fill(point_x_ptr, point_x_ptr + 3, 0.0);
                 std::fill(point_y_ptr, point_y_ptr + 3, 0.0);
             }
@@ -377,12 +369,14 @@ BundleAdjustment::analytic_jacobian (SparseMatrixType* jac_cam,
             /*jac_points中三维点对应的列数为point_id* 3*/
             std::size_t point_col = obs.point_id * 3;
 
-            for (int j = 0; jac_cam != nullptr && j < this->num_cam_params; ++j) {
+            for (int j = 0; jac_cam != nullptr && j < this->num_cam_params; ++j)
+            {
                 cam_triplets.push_back(SparseMatrixType::Triplet(row_x, cam_col + j, cam_x_ptr[j]));
                 cam_triplets.push_back(SparseMatrixType::Triplet(row_y, cam_col + j, cam_y_ptr[j]));
             }
 
-            for (int j = 0; jac_points != nullptr && j < 3; ++j) {
+            for (int j = 0; jac_points != nullptr && j < 3; ++j)
+            {
                 point_triplets.push_back(SparseMatrixType::Triplet(row_x, point_col + j, point_x_ptr[j]));
                 point_triplets.push_back(SparseMatrixType::Triplet(row_y, point_col + j, point_y_ptr[j]));
             }
@@ -407,12 +401,11 @@ BundleAdjustment::analytic_jacobian (SparseMatrixType* jac_cam,
     }
 }
 
-void
-BundleAdjustment::analytic_jacobian_entries (
-        Camera const& cam,
-    Point3D const& point,
-    double* cam_x_ptr, double* cam_y_ptr,
-    double* point_x_ptr, double* point_y_ptr)
+void BundleAdjustment::analytic_jacobian_entries(
+    Camera const &cam,
+    Point3D const &point,
+    double *cam_x_ptr, double *cam_y_ptr,
+    double *point_x_ptr, double *point_y_ptr)
 {
     /*
      * This function computes the Jacobian entries for the given camera and
@@ -447,10 +440,10 @@ BundleAdjustment::analytic_jacobian_entries (
      */
 
     /* Aliases. */
-    double const* r = cam.rotation;
-    double const* t = cam.translation;
-    double const* k = cam.distortion;
-    double const* p3d = point.pos;
+    double const *r = cam.rotation;
+    double const *t = cam.translation;
+    double const *k = cam.distortion;
+    double const *p3d = point.pos;
 
     /* Temporary values. */
     double const rx = r[0] * p3d[0] + r[1] * p3d[1] + r[2] * p3d[2];
@@ -590,15 +583,15 @@ BundleAdjustment::analytic_jacobian_entries (
      */
     double const rad_deriv_pz = -2.0 * radius2 / pz;
 
-    double const rd_deriv_px = rd_deriv_rad * rad_deriv_px;//
-    double const rd_deriv_py = rd_deriv_rad * rad_deriv_py;//
-    double const rd_deriv_pz = rd_deriv_rad * rad_deriv_pz;//
+    double const rd_deriv_px = rd_deriv_rad * rad_deriv_px; //
+    double const rd_deriv_py = rd_deriv_rad * rad_deriv_py; //
+    double const rd_deriv_pz = rd_deriv_rad * rad_deriv_pz; //
 
-    double const ix_deriv_px = 1 / pz;//
-    double const ix_deriv_pz = -ix / pz;//
+    double const ix_deriv_px = 1 / pz;   //
+    double const ix_deriv_pz = -ix / pz; //
 
-    double const iy_deriv_py = 1 / pz;//
-    double const iy_deriv_pz = -iy / pz;//
+    double const iy_deriv_py = 1 / pz;   //
+    double const iy_deriv_pz = -iy / pz; //
 
     double const ix_deriv_r0 = -ix * ry / pz;
     double const ix_deriv_r1 = (rz + rx * ix) / pz;
@@ -669,8 +662,7 @@ BundleAdjustment::analytic_jacobian_entries (
 #endif
 }
 
-void
-BundleAdjustment::update_parameters (DenseVectorType const& delta_x)
+void BundleAdjustment::update_parameters(DenseVectorType const &delta_x)
 {
     /* Update cameras. */
     std::size_t total_camera_params = 0;
@@ -678,8 +670,8 @@ BundleAdjustment::update_parameters (DenseVectorType const& delta_x)
     {
         for (std::size_t i = 0; i < this->cameras->size(); ++i)
             this->update_camera(this->cameras->at(i),
-                delta_x.data() + this->num_cam_params * i,
-                &this->cameras->at(i));
+                                delta_x.data() + this->num_cam_params * i,
+                                &this->cameras->at(i));
         total_camera_params = this->cameras->size() * this->num_cam_params;
     }
 
@@ -688,75 +680,72 @@ BundleAdjustment::update_parameters (DenseVectorType const& delta_x)
     {
         for (std::size_t i = 0; i < this->points->size(); ++i)
             this->update_point(this->points->at(i),
-                delta_x.data() + total_camera_params + i * 3,
-                &this->points->at(i));
+                               delta_x.data() + total_camera_params + i * 3,
+                               &this->points->at(i));
     }
 }
 
-void
-BundleAdjustment::update_camera (Camera const& cam,
-    double const* update, Camera* out)
+void BundleAdjustment::update_camera(Camera const &cam,
+                                     double const *update, Camera *out)//更新相机参数
 {
-    if (opts.fixed_intrinsics)
+    if (opts.fixed_intrinsics)//如果固定内参数矩阵K，只优化R，T
     {
-        out->focal_length = cam.focal_length;
-        out->distortion[0] = cam.distortion[0];
+        out->focal_length = cam.focal_length;//输入焦距等于输出焦距
+        out->distortion[0] = cam.distortion[0];//输入径向畸变等于输出径向畸变
         out->distortion[1] = cam.distortion[1];
     }
-    else
+    else//若内参矩阵不固定，则同时优化相机的九个参数
     {
-        out->focal_length = cam.focal_length + update[0];
-        out->distortion[0] = cam.distortion[0] + update[1];
+        out->focal_length = cam.focal_length + update[0];//更新相机的焦距
+        out->distortion[0] = cam.distortion[0] + update[1];//更新相机的径向畸变
         out->distortion[1] = cam.distortion[1] + update[2];
     }
 
-    int const offset = this->opts.fixed_intrinsics ? 0 : 3;
-    out->translation[0] = cam.translation[0] + update[0 + offset];
+    int const offset = this->opts.fixed_intrinsics ? 0 : 3;//内参矩阵固定=0，否则=3
+    out->translation[0] = cam.translation[0] + update[0 + offset];//更新T
     out->translation[1] = cam.translation[1] + update[1 + offset];
     out->translation[2] = cam.translation[2] + update[2 + offset];
 
-    double rot_orig[9];
+    double rot_orig[9];//定义数组储存旋转矩阵R
     std::copy(cam.rotation, cam.rotation + 9, rot_orig);
-    double rot_update[9];
+    double rot_update[9];//定义数组储存旋转矩阵的变化量
     this->rodrigues_to_matrix(update + 3 + offset, rot_update);
     math::matrix_multiply(rot_update, 3, 3, rot_orig, 3, out->rotation);
 }
 
-void
-BundleAdjustment::update_point (Point3D const& pt,
-    double const* update, Point3D* out)
+void BundleAdjustment::update_point(Point3D const &pt,
+                                    double const *update, Point3D *out)
 {
     out->pos[0] = pt.pos[0] + update[0];
     out->pos[1] = pt.pos[1] + update[1];
     out->pos[2] = pt.pos[2] + update[2];
 }
 
-void
-BundleAdjustment::print_status (bool detailed) const
+void BundleAdjustment::print_status(bool detailed) const
 {
     if (!detailed)
     {
         std::cout << "BA: MSE " << this->status.initial_mse
-            << " -> " << this->status.final_mse << ", "
-            << this->status.num_lm_iterations << " LM iters, "
-            << this->status.num_cg_iterations << " CG iters, "
-            << this->status.runtime_ms << "ms."
-            << std::endl;
+                  << " -> " << this->status.final_mse << ", "
+                  << this->status.num_lm_iterations << " LM iters, "
+                  << this->status.num_cg_iterations << " CG iters, "
+                  << this->status.runtime_ms << "ms."
+                  << std::endl;
         return;
     }
 
     std::cout << "Bundle Adjustment Status:" << std::endl;
     std::cout << "  Initial MSE: "
-        << this->status.initial_mse << std::endl;
+              << this->status.initial_mse << std::endl;
     std::cout << "  Final MSE: "
-        << this->status.final_mse << std::endl;
+              << this->status.final_mse << std::endl;
     std::cout << "  LM iterations: "
-        << this->status.num_lm_iterations << " ("
-        << this->status.num_lm_successful_iterations << " successful, "
-        << this->status.num_lm_unsuccessful_iterations << " unsuccessful)"
-        << std::endl;
+              << this->status.num_lm_iterations << " ("
+              << this->status.num_lm_successful_iterations << " successful, "
+              << this->status.num_lm_unsuccessful_iterations << " unsuccessful)"
+              << std::endl;
     std::cout << "  CG iterations: "
-        << this->status.num_cg_iterations << std::endl;
+              << this->status.num_cg_iterations << std::endl;
 }
 
 SFM_BA_NAMESPACE_END

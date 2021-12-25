@@ -93,22 +93,22 @@ struct SurveyObservation
 {
     SurveyObservation (int view_id, float x, float y);
 
-    int view_id;
-    math::Vec2f pos;
+    int view_id;//视角ID
+    math::Vec2f pos;//2D位置信息
 };
 
-/** The list of all survey point observations inside a survey point. */
+/** The list of all survey point observations inside a survey point. 所有能观测到3D点的2D点列表*/
 typedef std::vector<SurveyObservation> SurveyObservationList;
 
-/** Representation of a survey point. */
+/** Representation of a survey point. 一个测量点的表示*/
 struct SurveyPoint
 {
-    math::Vec3f pos;
-    SurveyObservationList observations;
+    math::Vec3f pos;//3D点坐标
+    SurveyObservationList observations;//所有能观测到3D点的2D点列表（视角ID+特征点pos）
 };
 
 /** The list of all survey poins. */
-typedef std::vector<SurveyPoint> SurveyPointList;
+typedef std::vector<SurveyPoint> SurveyPointList;//所有观测点信息（3D点+所有2D点信息）
 
 /* ------------- Data Structures for Feature Matching ------------- */
 
